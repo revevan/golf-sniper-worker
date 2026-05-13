@@ -1,5 +1,4 @@
 const KENNA_BASE = 'https://phx-api-be-east-1b.kenna.io';
-const KENNA_ORIGIN = 'https://american-golf-long-beach-public.book.teeitup.com';
 
 // Convert UTC ISO string to Pacific HH:MM
 function toPacificHHMM(utcStr) {
@@ -17,13 +16,18 @@ function toPacificHHMM(utcStr) {
 
 export async function fetchTeeItUp(alias, date) {
   const url = `${KENNA_BASE}/v2/tee-times?date=${date}`;
+  const origin = `https://${alias}.book.teeitup.com`;
   const res = await fetch(url, {
     headers: {
-      'Origin': KENNA_ORIGIN,
+      'Origin': origin,
       'x-be-alias': alias,
     },
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`TeeItUp fetch failed for ${alias}: HTTP ${res.status} — ${body.slice(0, 200)}`);
+    return [];
+  }
   const data = await res.json();
   return (data[0]?.teetimes ?? []).map(slot => ({
     time: toPacificHHMM(slot.teetime),
