@@ -7,11 +7,13 @@ export const COURSES = [
   { name: 'Recreation Park (9)', city: 'Long Beach', holes: [9], api: 'teeitup', alias: 'recreation-park-golf-course-9' },
   { name: 'Skylinks at Long Beach', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'skylinks-golf-course' },
 
-  // LA County DPR
+  // Los Angeles — LA County Parks
   { name: 'Alondra Park', city: 'Lawndale', holes: [18], api: 'teeitup', alias: 'alondra-park-golf-course' },
   { name: 'Chester Washington', city: 'Los Angeles', holes: [18], api: 'teeitup', alias: 'chester-washington-golf-course' },
   { name: 'Diamond Bar', city: 'Diamond Bar', holes: [18], api: 'teeitup', alias: 'diamond-bar-golf-course' },
   { name: 'Don Knabe Golf Center', city: 'Norwalk', holes: [9], api: 'teeitup', alias: 'don-knabe-golf-center-junior-academy-formerly-norwalk' },
+  { name: 'Industry Hills – Eisenhower', city: 'City of Industry', holes: [18], api: 'teeitup', alias: 'industry-hills-golf-club-ike-course' },
+  { name: 'Industry Hills – Zaharias', city: 'City of Industry', holes: [18], api: 'teeitup', alias: 'industry-hills-golf-club-babe-course' },
   { name: 'Knollwood', city: 'Granada Hills', holes: [18], api: 'teeitup', alias: 'knollwood-golf-course' },
   { name: 'La Mirada Golf Club', city: 'La Mirada', holes: [18], api: 'teeitup', alias: 'la-mirada-golf-club' },
   { name: 'Lakewood Country Club', city: 'Lakewood', holes: [18], api: 'teeitup', alias: 'lakewood-country-club' },
@@ -21,24 +23,33 @@ export const COURSES = [
   { name: 'Mountain Meadows', city: 'Pomona', holes: [18], api: 'teeitup', alias: 'mountain-meadows-golf-course' },
   { name: 'Whittier Narrows', city: 'Rosemead', holes: [18], api: 'teeitup', alias: 'whittier-narrows-golf-course' },
 
-  // Industry Hills
-  { name: 'Industry Hills – Eisenhower', city: 'City of Industry', holes: [18], api: 'teeitup', alias: 'industry-hills-golf-club-ike-course' },
-  { name: 'Industry Hills – Zaharias', city: 'City of Industry', holes: [18], api: 'teeitup', alias: 'industry-hills-golf-club-babe-course' },
-
-  // ForeUp
-  { name: 'Rustic Canyon', city: 'Moorpark', holes: [18], api: 'foreup', facilityId: '21903', scheduleId: '9285' },
-
-  // City of LA (GolfNow)
+  // Los Angeles — City of LA
+  { name: 'Balboa', city: 'Encino', holes: [18], api: 'golfnow', facilityId: 12197 },
+  { name: 'Encino', city: 'Encino', holes: [18], api: 'golfnow', facilityId: 12200 },
+  { name: 'Hansen Dam', city: 'Lake View Terrace', holes: [18], api: 'golfnow', facilityId: 12201 },
+  { name: 'Harbor Park', city: 'Wilmington', holes: [18], api: 'golfnow', facilityId: 12218 },
   { name: 'Harding (Griffith Park)', city: 'Los Angeles', holes: [18], api: 'golfnow', facilityId: 12202 },
-  { name: 'Wilson (Griffith Park)', city: 'Los Angeles', holes: [18], api: 'golfnow', facilityId: 12204 },
+  { name: 'Los Feliz Municipal', city: 'Los Angeles', holes: [9], api: 'golfnow', facilityId: 16836 },
+  { name: 'Penmar', city: 'Venice', holes: [9], api: 'golfnow', facilityId: 12219 },
   { name: 'Rancho Park', city: 'Los Angeles', holes: [18], api: 'golfnow', facilityId: 12203 },
   { name: 'Rancho Park Par-3', city: 'Los Angeles', holes: [9], api: 'golfnow', facilityId: 17155 },
-  { name: 'Encino', city: 'Encino', holes: [18], api: 'golfnow', facilityId: 12200 },
-  { name: 'Balboa', city: 'Encino', holes: [18], api: 'golfnow', facilityId: 12197 },
-  { name: 'Woodley Lakes', city: 'Van Nuys', holes: [18], api: 'golfnow', facilityId: 12205 },
-  { name: 'Hansen Dam', city: 'Lake View Terrace', holes: [18], api: 'golfnow', facilityId: 12201 },
   { name: 'Roosevelt', city: 'Los Angeles', holes: [9], api: 'golfnow', facilityId: 12220 },
-  { name: 'Penmar', city: 'Venice', holes: [9], api: 'golfnow', facilityId: 12219 },
-  { name: 'Harbor Park', city: 'Wilmington', holes: [18], api: 'golfnow', facilityId: 12218 },
-  { name: 'Los Feliz Municipal', city: 'Los Angeles', holes: [9], api: 'golfnow', facilityId: 16836 },
+  { name: 'Wilson (Griffith Park)', city: 'Los Angeles', holes: [18], api: 'golfnow', facilityId: 12204 },
+  { name: 'Woodley Lakes', city: 'Van Nuys', holes: [18], api: 'golfnow', facilityId: 12205 },
+
+  // Los Angeles — Ventura County adjacent
+  { name: 'Rustic Canyon', city: 'Moorpark', holes: [18], api: 'foreup', facilityId: '21903', scheduleId: '9285' },
+
+  // Orange County
+  { name: 'Anaheim Hills Golf Course', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 1236 },
+  { name: 'Costa Mesa CC (Los Lagos)', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12885 },
+  { name: 'Costa Mesa CC (Mesa Linda)', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12886 },
+  { name: 'Coyote Hills Golf Course', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'coyote-hills-golf-course' },
+  { name: 'Dad Miller Golf Course', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 5240 },
+  { name: 'Fullerton Golf Course', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'fullerton-golf-course' },
+  { name: 'Lake Forest Golf & Practice Center', city: 'Lake Forest', holes: [9], api: 'teeitup', alias: 'lake-forest-golf-and-practice-center' },
+  { name: 'Mile Square Golf Course', city: 'Fountain Valley', holes: [18], api: 'foreup', facilityId: '20096', scheduleId: '3760' },
+  { name: 'Rancho San Joaquin', city: 'Irvine', holes: [18], api: 'teeitup', alias: 'rancho-san-joaquin-golf-club' },
+  { name: 'River View Golf Course', city: 'Santa Ana', holes: [18], api: 'teeitup', alias: 'river-view-golf-club' },
+  { name: 'San Clemente Municipal Golf Course', city: 'San Clemente', holes: [18], api: 'foreup', facilityId: '18754', scheduleId: '413' },
 ];
