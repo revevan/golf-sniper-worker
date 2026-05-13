@@ -15,10 +15,8 @@ function toPacificHHMM(utcStr) {
 }
 
 export async function fetchTeeItUp(alias, date) {
-  // TeeItUp API expects MM-DD-YYYY; subscriptions store dates as YYYY-MM-DD
-  const [y, m, d] = date.split('-');
-  const apiDate = `${m}-${d}-${y}`;
-  const url = `${KENNA_BASE}/v2/tee-times?date=${apiDate}`;
+  // TeeItUp API expects YYYY-MM-DD (same format subscriptions store)
+  const url = `${KENNA_BASE}/v2/tee-times?date=${date}`;
   const origin = `https://${alias}.book.teeitup.com`;
   const res = await fetch(url, {
     headers: {
