@@ -249,15 +249,18 @@
     const courses = await res.json();
 
     const select = document.getElementById('courseSelect');
+    const regionOrder = ['Long Beach', 'LA County Parks', 'City of LA', 'Ventura County', 'Orange County'];
     const groups = {};
     for (const c of courses) {
-      if (!groups[c.city]) groups[c.city] = [];
-      groups[c.city].push(c);
+      const key = c.region ?? c.city;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(c);
     }
-    for (const [city, list] of Object.entries(groups)) {
+    const orderedKeys = [...regionOrder.filter(r => groups[r]), ...Object.keys(groups).filter(k => !regionOrder.includes(k))];
+    for (const key of orderedKeys) {
       const og = document.createElement('optgroup');
-      og.label = city;
-      for (const c of list) {
+      og.label = key;
+      for (const c of groups[key]) {
         const opt = document.createElement('option');
         opt.value = c.alias ?? c.facilityId;
         opt.textContent = c.name;
