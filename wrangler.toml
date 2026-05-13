@@ -9,3 +9,7 @@ crons = ["*/10 * * * *"]
 [[kv_namespaces]]
 binding = "KV"
 id = "e47ef586fb7b41eeb38994c84f9ef7cc"
+
+[observability.logs]
+enabled = true
+invocation_logs = true
