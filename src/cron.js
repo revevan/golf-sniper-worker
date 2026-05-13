@@ -1,3 +1,4 @@
+import { COURSES } from './courses.js';
 import { fetchTeeItUp, filterTeeItUp } from './teeitup.js';
 import { fetchForeUp, filterForeUp } from './foreup.js';
 import { fetchGolfNow, filterGolfNow } from './golfnow.js';
@@ -26,10 +27,14 @@ export async function runCron(env) {
 
   for (const { course, subs: groupSubs } of Object.values(groups)) {
     try {
+      // Look up course metadata for portal-specific overrides (teeItUpAlias, teeItUpCourseId, teeItUpOrigin)
+      const courseMeta = COURSES.find(c => (c.alias ?? String(c.facilityId)) === course.courseKey) ?? {};
+
       let allSlots = [];
 
       if (course.api === 'teeitup') {
-        allSlots = await fetchTeeItUp(course.courseKey, course.date);
+        const alias = courseMeta.teeItUpAlias ?? course.courseKey;
+        allSlots = await fetchTeeItUp(alias, course.date, courseMeta.teeItUpCourseId ?? null, courseMeta.teeItUpOrigin ?? null);
       } else if (course.api === 'foreup') {
         const minP = Math.min(...groupSubs.map(s => s.minPlayers));
         allSlots = await fetchForeUp(course.facilityId, course.scheduleId, course.date, minP);
@@ -73,7 +78,7 @@ export async function runCron(env) {
           ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
           : course.api === 'golfnow'
           ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search`
-          : `https://${course.courseKey}.book.teeitup.com`;
+          : (courseMeta.teeItUpOrigin ?? `https://${course.courseKey}.book.teeitup.com`);
 
         const lines = newSlots.map(slot => {
           const priceStr = slot.greenFee ? ` — $${slot.greenFee}/pp` : '';

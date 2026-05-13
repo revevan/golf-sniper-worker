@@ -14,10 +14,12 @@ function toPacificHHMM(utcStr) {
   return `${h === '24' ? '00' : h}:${m}`;
 }
 
-export async function fetchTeeItUp(alias, date) {
-  // TeeItUp API expects YYYY-MM-DD (same format subscriptions store)
+// alias: x-be-alias to send (may be a portal alias for multi-course sites)
+// teeItUpCourseId: if set, filter the multi-course response to this specific course
+// teeItUpOrigin: override the Origin header (needed for portal-based courses)
+export async function fetchTeeItUp(alias, date, teeItUpCourseId = null, teeItUpOrigin = null) {
   const url = `${KENNA_BASE}/v2/tee-times?date=${date}`;
-  const origin = `https://${alias}.book.teeitup.com`;
+  const origin = teeItUpOrigin ?? `https://${alias}.book.teeitup.com`;
   const res = await fetch(url, {
     headers: {
       'Origin': origin,
@@ -30,7 +32,10 @@ export async function fetchTeeItUp(alias, date) {
     return [];
   }
   const data = await res.json();
-  return (data[0]?.teetimes ?? []).map(slot => ({
+  const entries = teeItUpCourseId
+    ? data.filter(e => e.courseId === teeItUpCourseId)
+    : data;
+  return (entries[0]?.teetimes ?? []).map(slot => ({
     time: toPacificHHMM(slot.teetime),
     availableSpots: slot.maxPlayers - slot.bookedPlayers,
     holes: slot.rates?.[0]?.holes ?? 18,

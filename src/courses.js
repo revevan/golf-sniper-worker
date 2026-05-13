@@ -2,7 +2,8 @@ export const COURSES = [
   // Long Beach
   { name: 'El Dorado Park', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'el-dorado-park-golf-course' },
   { name: 'Heartwell Golf Course', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'heartwell-golf-course' },
-  { name: 'Recreation Park (18)', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'recreation-park-golf-course-18' },
+  // Tee times only available through the multi-course American Golf portal, not the individual subdomain
+  { name: 'Recreation Park (18)', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'recreation-park-golf-course-18', teeItUpAlias: 'american-golf-long-beach', teeItUpOrigin: 'https://american-golf-long-beach-public.book.teeitup.com', teeItUpCourseId: '54f14bbc0c8ad60378b01579' },
   { name: 'Recreation Park (9)', city: 'Long Beach', holes: [9], api: 'teeitup', alias: 'recreation-park-golf-course-9' },
   { name: 'Skylinks at Long Beach', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'skylinks-golf-course' },
 
