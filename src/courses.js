@@ -25,8 +25,23 @@ export const COURSES = [
   { name: 'Industry Hills – Eisenhower', city: 'City of Industry', holes: [18], api: 'teeitup', alias: 'industry-hills-golf-club-ike-course' },
   { name: 'Industry Hills – Zaharias', city: 'City of Industry', holes: [18], api: 'teeitup', alias: 'industry-hills-golf-club-babe-course' },
 
+  // Orange County (TeeItUp)
+  { name: 'Coyote Hills Golf Course', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'coyote-hills-golf-course' },
+  { name: 'Fullerton Golf Course', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'fullerton-golf-course' },
+  { name: 'Rancho San Joaquin', city: 'Irvine', holes: [18], api: 'teeitup', alias: 'rancho-san-joaquin-golf-club' },
+  { name: 'River View Golf Course', city: 'Santa Ana', holes: [18], api: 'teeitup', alias: 'river-view-golf-club' },
+  { name: 'Lake Forest Golf & Practice Center', city: 'Lake Forest', holes: [9], api: 'teeitup', alias: 'lake-forest-golf-and-practice-center' },
+
+  // Orange County (GolfNow)
+  { name: 'Anaheim Hills Golf Course', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 1236 },
+  { name: 'Dad Miller Golf Course', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 5240 },
+  { name: 'Costa Mesa CC (Los Lagos)', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12885 },
+  { name: 'Costa Mesa CC (Mesa Linda)', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12886 },
+
   // ForeUp
   { name: 'Rustic Canyon', city: 'Moorpark', holes: [18], api: 'foreup', facilityId: '21903', scheduleId: '9285' },
+  { name: 'Mile Square Golf Course', city: 'Fountain Valley', holes: [18], api: 'foreup', facilityId: '20096', scheduleId: '3760' },
+  { name: 'San Clemente Municipal Golf Course', city: 'San Clemente', holes: [18], api: 'foreup', facilityId: '18754', scheduleId: '413' },
 
   // City of LA (GolfNow)
   { name: 'Harding (Griffith Park)', city: 'Los Angeles', holes: [18], api: 'golfnow', facilityId: 12202 },
