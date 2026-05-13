@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⛳ LA Golf Tee Time Sniper</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f0;
+      color: #222;
+      min-height: 100vh;
+    }
+    header {
+      background: #2e7d32;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.4rem; }
+    header p { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; }
+    main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #aaa;
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+      margin-top: 14px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input, select {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      background: #fafafa;
+      transition: border-color 0.15s;
+      appearance: none;
+    }
+    input:focus, select:focus { border-color: #4caf50; background: white; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 16px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-green { background: #4caf50; color: white; }
+    .btn-gray { background: #eee; color: #444; }
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .step-num {
+      background: #4caf50;
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .alert-row {
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.85rem;
+    }
+    .alert-row:last-child { border-bottom: none; }
+    .alert-course { font-weight: 700; }
+    .alert-meta { color: #777; font-size: 0.78rem; margin-top: 2px; }
+    .cancel-btn {
+      float: right;
+      background: none;
+      border: none;
+      color: #e53935;
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-weight: 600;
+      padding: 0;
+    }
+    .empty { color: #aaa; font-size: 0.85rem; }
+    .optgroup-label { font-weight: 700; }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s;
+      white-space: nowrap;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+    .success-banner {
+      background: #e8f5e9;
+      border: 1.5px solid #a5d6a7;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      font-size: 0.88rem;
+      color: #2e7d32;
+      display: none;
+    }
+    code {
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⛳ LA Golf Tee Time Sniper</h1>
+  <p>Get a Telegram alert the moment a tee time opens up</p>
+</header>
+
+<main>
+
+  <!-- Step 1: Link Telegram -->
+  <div class="card" id="linkCard">
+    <div class="card-title">Step 1 — Link Your Telegram</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>Open Telegram and message <a href="http://t.me/golfteetimesniperbot" target="_blank"><strong>@golfteetimesniperbot</strong></a></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>Send the message: <code>/start</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>The bot will reply with a 6-character code. Enter it below.</div>
+    </div>
+    <label>Link Code</label>
+    <input type="text" id="linkCode" placeholder="e.g. GOLF42" maxlength="6" autocomplete="off"
+      oninput="this.value = this.value.toUpperCase()">
+    <button class="btn btn-green" onclick="verifyCode()">Continue →</button>
+  </div>
+
+  <!-- Step 2: Set up alert (hidden until code verified) -->
+  <div class="card" id="alertCard" style="display:none">
+    <div class="card-title">Step 2 — Set Up Your Alert</div>
+
+    <label>Course</label>
+    <select id="courseSelect"></select>
+
+    <label>Date</label>
+    <input type="date" id="alertDate">
+
+    <label>Time Window</label>
+    <div class="row">
+      <input type="time" id="earliestTime" value="07:00">
+      <input type="time" id="latestTime" value="10:00">
+    </div>
+
+    <label>Min Players Available</label>
+    <input type="number" id="minPlayers" min="1" max="4" value="2" style="max-width:80px">
+
+    <label>Holes</label>
+    <select id="holesSelect">
+      <option value="18">18 holes</option>
+      <option value="9">9 holes</option>
+    </select>
+
+    <button class="btn btn-green" id="subscribeBtn" onclick="subscribe()">🔔 Set Alert</button>
+  </div>
+
+  <!-- Success -->
+  <div class="success-banner" id="successBanner">
+    ✅ Alert set! You'll get a Telegram message the moment a matching tee time opens.
+  </div>
+
+  <!-- Active alerts -->
+  <div class="card" id="alertsCard" style="display:none">
+    <div class="card-title">Your Active Alerts</div>
+    <div id="alertsList"></div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = 'https://golf-sniper.evanwkennedy.workers.dev';
+  let chatId = localStorage.getItem('golf_chat_id');
+  let verifiedCode = localStorage.getItem('golf_link_code');
+
+  let toastTimer;
+  function toast(msg, ms = 3000) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+  }
+
+  async function loadCourses() {
+    const res = await fetch(`${API}/courses`);
+    const courses = await res.json();
+
+    const select = document.getElementById('courseSelect');
+    const groups = {};
+    for (const c of courses) {
+      if (!groups[c.city]) groups[c.city] = [];
+      groups[c.city].push(c);
+    }
+    for (const [city, list] of Object.entries(groups)) {
+      const og = document.createElement('optgroup');
+      og.label = city;
+      for (const c of list) {
+        const opt = document.createElement('option');
+        opt.value = c.alias ?? c.facilityId;
+        opt.textContent = c.name;
+        opt.dataset.holes = JSON.stringify(c.holes);
+        opt.dataset.api = c.api;
+        og.appendChild(opt);
+      }
+      select.appendChild(og);
+    }
+
+    select.addEventListener('change', updateHolesOptions);
+    updateHolesOptions();
+  }
+
+  function updateHolesOptions() {
+    const select = document.getElementById('courseSelect');
+    const opt = select.selectedOptions[0];
+    const holes = JSON.parse(opt?.dataset.holes ?? '[18]');
+    const holesSelect = document.getElementById('holesSelect');
+    holesSelect.innerHTML = holes.map(h => `<option value="${h}">${h} holes</option>`).join('');
+  }
+
+  // Set min date to tomorrow
+  function initDatePicker() {
+    const input = document.getElementById('alertDate');
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    input.min = tomorrow.toISOString().split('T')[0];
+    input.value = tomorrow.toISOString().split('T')[0];
+  }
+
+  async function verifyCode() {
+    const code = document.getElementById('linkCode').value.trim().toUpperCase();
+    if (code.length !== 6) { toast('Enter the 6-character code from the bot'); return; }
+
+    const btn = document.querySelector('#linkCard .btn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying…';
+
+    try {
+      const res = await fetch(`${API}/resolve-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkCode: code }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast('❌ ' + data.error); return; }
+
+      verifiedCode = code;
+      chatId = data.chatId;
+      localStorage.setItem('golf_link_code', code);
+      localStorage.setItem('golf_chat_id', data.chatId);
+      showAlertStep();
+    } catch (e) {
+      toast('❌ Network error — try again');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Continue →';
+    }
+  }
+
+  function showAlertStep() {
+    document.getElementById('linkCard').style.display = 'none';
+    document.getElementById('alertCard').style.display = 'block';
+    loadAlerts();
+  }
+
+  async function subscribe() {
+    const btn = document.getElementById('subscribeBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Setting alert…';
+
+    const courseKey = document.getElementById('courseSelect').value;
+    const date = document.getElementById('alertDate').value;
+    const earliestTime = document.getElementById('earliestTime').value;
+    const latestTime = document.getElementById('latestTime').value;
+    const minPlayers = document.getElementById('minPlayers').value;
+    const holes = document.getElementById('holesSelect').value;
+
+    if (!date) { toast('Pick a date'); btn.disabled = false; btn.textContent = '🔔 Set Alert'; return; }
+    if (earliestTime >= latestTime) { toast('End time must be after start time'); btn.disabled = false; btn.textContent = '🔔 Set Alert'; return; }
+
+    try {
+      const res = await fetch(`${API}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkCode: verifiedCode, chatId, courseKey, date, earliestTime, latestTime, minPlayers, holes }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast('❌ ' + data.error);
+        // If code expired, send them back to link step
+        if (data.error.includes('expired') || data.error.includes('Invalid')) {
+          localStorage.removeItem('golf_link_code');
+          verifiedCode = null;
+          if (!chatId) {
+            document.getElementById('linkCard').style.display = 'block';
+            document.getElementById('alertCard').style.display = 'none';
+          }
+        }
+        return;
+      }
+
+      if (data.chatId) {
+        chatId = data.chatId;
+        localStorage.setItem('golf_chat_id', data.chatId);
+      }
+      document.getElementById('successBanner').style.display = 'block';
+      setTimeout(() => document.getElementById('successBanner').style.display = 'none', 5000);
+      loadAlerts();
+    } catch (e) {
+      toast('❌ Network error — try again');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔔 Set Alert';
+    }
+  }
+
+  async function loadAlerts() {
+    // We need the chatId — fetch it by doing a dummy subscribe lookup via a subscriptions call
+    // The Worker resolves chatId from the code; we store chatId after first successful subscribe
+    const storedChatId = localStorage.getItem('golf_chat_id');
+    if (!storedChatId) return; // haven't subscribed yet
+
+    const res = await fetch(`${API}/subscriptions?chatId=${storedChatId}`);
+    if (!res.ok) return;
+    const subs = await res.json();
+
+    const card = document.getElementById('alertsCard');
+    const list = document.getElementById('alertsList');
+
+    if (!subs.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    list.innerHTML = subs.map(s => `
+      <div class="alert-row" id="alert-${s.id}">
+        <button class="cancel-btn" onclick="cancelAlert('${s.id}')">Cancel</button>
+        <div class="alert-course">${s.courseName}</div>
+        <div class="alert-meta">${s.date} · ${s.earliestTime}–${s.latestTime} · ${s.minPlayers}+ players · ${s.holes} holes</div>
+      </div>
+    `).join('');
+  }
+
+  async function cancelAlert(id) {
+    const res = await fetch(`${API}/subscription/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      document.getElementById(`alert-${id}`)?.remove();
+      toast('Alert cancelled');
+      const list = document.getElementById('alertsList');
+      if (!list.children.length) document.getElementById('alertsCard').style.display = 'none';
+    }
+  }
+
+  async function init() {
+    await loadCourses();
+    initDatePicker();
+    if (chatId) {
+      showAlertStep();
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
