@@ -31,7 +31,6 @@ export async function runCron(env) {
       if (course.api === 'teeitup') {
         allSlots = await fetchTeeItUp(course.courseKey, course.date);
       } else if (course.api === 'foreup') {
-        // Use most-restrictive player count to get broadest result set
         const minP = Math.min(...groupSubs.map(s => s.minPlayers));
         allSlots = await fetchForeUp(course.facilityId, course.scheduleId, course.date, minP);
       } else if (course.api === 'golfnow') {
@@ -40,7 +39,7 @@ export async function runCron(env) {
         allSlots = await fetchGolfNow(course.facilityId, course.date, minP, holes);
       }
 
-      console.log(`${course.courseKey} on ${course.date}: ${allSlots.length} raw slot(s) from API`);
+      console.log(`${course.courseKey ?? course.facilityId} on ${course.date}: ${allSlots.length} raw slot(s) from API`);
 
       for (const sub of groupSubs) {
         const matches = course.api === 'teeitup'
@@ -51,39 +50,50 @@ export async function runCron(env) {
 
         console.log(`Sub ${sub.id} (${sub.earliestTime}–${sub.latestTime}, ${sub.minPlayers}p, ${sub.holes}h): ${matches.length} match(es)`);
 
+        // Filter to only slots not yet notified
+        const newSlots = [];
         for (const slot of matches) {
           const dedupeKey = `notified:${sub.id}:${course.date}:${slot.time}`;
           const already = await env.KV.get(dedupeKey);
           if (already) {
             console.log(`Skipping ${slot.time} — already notified`);
-            continue;
+          } else {
+            newSlots.push(slot);
           }
-
-          // Mark notified for 25 hours so it doesn't re-alert for the same slot
-          await env.KV.put(dedupeKey, '1', { expirationTtl: 90000 });
-
-          const bookUrl = course.api === 'foreup'
-            ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
-            : course.api === 'golfnow'
-            ? `https://www.golfnow.com${slot.detailUrl ?? `/tee-times/facility/${course.facilityId}/search`}`
-            : `https://${course.courseKey}.book.teeitup.com`;
-
-          const priceStr = slot.greenFee ? ` ($${slot.greenFee}/pp)` : '';
-          await sendTelegram(
-            env.TELEGRAM_BOT_TOKEN,
-            sub.telegramChatId,
-            `⛳ *Tee Time Available — ${sub.courseName}*\n` +
-            `${sub.date} at ${slot.time}${priceStr}\n` +
-            `${slot.availableSpots} spot(s) available\n\n` +
-            `[Book now](${bookUrl})`
-          );
         }
+
+        if (!newSlots.length) continue;
+
+        // Mark all new slots as notified
+        await Promise.all(newSlots.map(slot =>
+          env.KV.put(`notified:${sub.id}:${course.date}:${slot.time}`, '1', { expirationTtl: 90000 })
+        ));
+
+        const bookUrl = course.api === 'foreup'
+          ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
+          : course.api === 'golfnow'
+          ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search`
+          : `https://${course.courseKey}.book.teeitup.com`;
+
+        const lines = newSlots.map(slot => {
+          const priceStr = slot.greenFee ? ` — $${slot.greenFee}/pp` : '';
+          return `• ${slot.time} — ${slot.availableSpots} spot(s)${priceStr}`;
+        }).join('\n');
+
+        await sendTelegram(
+          env.TELEGRAM_BOT_TOKEN,
+          sub.telegramChatId,
+          `⛳ *Tee Times Available — ${sub.courseName}*\n` +
+          `${sub.date}\n\n` +
+          `${lines}\n\n` +
+          `[Book now](${bookUrl})`
+        );
       }
 
       // Polite delay between course API calls
       await new Promise(r => setTimeout(r, 500));
     } catch (err) {
-      console.error(`Error checking ${course.courseKey} on ${course.date}:`, err.message);
+      console.error(`Error checking ${course.courseKey ?? course.facilityId} on ${course.date}:`, err.message);
     }
   }
 }
