@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golf Sniper — Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+    header {
+      background: #162032;
+      border-bottom: 1px solid #2a3a4a;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.15rem; font-weight: 700; color: #fff; }
+    header span { font-size: 0.78rem; color: #6aaa6e; background: #1e3a22; padding: 3px 9px; border-radius: 20px; font-weight: 600; letter-spacing: 0.04em; }
+    main { max-width: 860px; margin: 0 auto; padding: 28px 20px; }
+
+    /* Auth screen */
+    #authScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 14px;
+    }
+    #authScreen h2 { font-size: 1rem; color: #aaa; font-weight: 500; }
+    #authScreen input {
+      padding: 11px 14px;
+      border: 1.5px solid #2e3e50;
+      border-radius: 9px;
+      background: #162032;
+      color: #e0e0e0;
+      font-size: 1rem;
+      width: 280px;
+      outline: none;
+    }
+    #authScreen input:focus { border-color: #4caf50; }
+    #authScreen button {
+      padding: 11px 28px;
+      background: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #authScreen button:hover { background: #388e3c; }
+    #authError { color: #ef5350; font-size: 0.85rem; }
+
+    /* Dashboard */
+    #dashboard { display: none; }
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #556;
+      margin-bottom: 12px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: #162032;
+      border: 1px solid #2a3a4a;
+      border-radius: 12px;
+      padding: 18px 16px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: #7a8a9a;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+    .stat-value.green { color: #66bb6a; }
+    .stat-value.blue { color: #42a5f5; }
+    .stat-value.amber { color: #ffa726; }
+    .stat-value.purple { color: #ab47bc; }
+    .stat-value.teal { color: #26c6da; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+    @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+
+    .card {
+      background: #162032;
+      border: 1px solid #2a3a4a;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .card-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #7a8a9a;
+      margin-bottom: 14px;
+    }
+
+    /* API breakdown bars */
+    .api-row { margin-bottom: 12px; }
+    .api-name { font-size: 0.82rem; color: #ccc; margin-bottom: 5px; display: flex; justify-content: space-between; }
+    .api-name span { color: #fff; font-weight: 600; }
+    .bar-track { background: #1e2e3e; border-radius: 4px; height: 8px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .bar-teeitup { background: #42a5f5; }
+    .bar-foreup { background: #66bb6a; }
+    .bar-golfnow { background: #ffa726; }
+
+    /* Top courses table */
+    .course-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #1e2e3e;
+      font-size: 0.85rem;
+    }
+    .course-row:last-child { border-bottom: none; }
+    .course-name { color: #ccc; }
+    .course-count {
+      background: #1e3a22;
+      color: #66bb6a;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .empty-note { color: #556; font-size: 0.85rem; font-style: italic; }
+
+    .meta { font-size: 0.75rem; color: #445; margin-top: 10px; text-align: right; }
+
+    .refresh-btn {
+      background: none;
+      border: 1px solid #2a3a4a;
+      color: #7a8a9a;
+      padding: 6px 14px;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      float: right;
+      margin-top: -4px;
+    }
+    .refresh-btn:hover { border-color: #4caf50; color: #4caf50; }
+    #loadingMsg { color: #556; font-size: 0.9rem; margin: 40px 0; text-align: center; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Golf Sniper</h1>
+  <span>Admin</span>
+</header>
+<main>
+  <div id="authScreen">
+    <h2>Enter admin secret</h2>
+    <input type="password" id="secretInput" placeholder="Secret key" autocomplete="off" />
+    <button onclick="loadStats()">View Dashboard</button>
+    <div id="authError"></div>
+  </div>
+
+  <div id="dashboard">
+    <p id="loadingMsg">Loading...</p>
+
+    <div id="content" style="display:none">
+      <div class="section-label">Overview <button class="refresh-btn" onclick="loadStats()">Refresh</button></div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Unique Users</div>
+          <div class="stat-value green" id="statUsers">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Alerts</div>
+          <div class="stat-value blue" id="statActive">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Requests</div>
+          <div class="stat-value amber" id="statTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Slot Matches</div>
+          <div class="stat-value purple" id="statMatches">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Alerts Sent</div>
+          <div class="stat-value teal" id="statAlerts">—</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="card">
+          <div class="card-title">API Breakdown (active)</div>
+          <div id="apiBreakdown"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top Requested Courses (active)</div>
+          <div id="topCourses"></div>
+        </div>
+      </div>
+
+      <p class="meta" id="generatedAt"></p>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API = 'https://golf-sniper.evanwkennedy.workers.dev';
+
+  const secretInput = document.getElementById('secretInput');
+  secretInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadStats(); });
+
+  // Restore secret from sessionStorage
+  const storedSecret = sessionStorage.getItem('adminSecret');
+  if (storedSecret) {
+    secretInput.value = storedSecret;
+    loadStats();
+  }
+
+  async function loadStats() {
+    const secret = secretInput.value.trim();
+    if (!secret) return;
+
+    document.getElementById('authError').textContent = '';
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('loadingMsg').style.display = 'block';
+    document.getElementById('content').style.display = 'none';
+
+    try {
+      const res = await fetch(`${API}/admin/stats?secret=${encodeURIComponent(secret)}`);
+      if (res.status === 401) {
+        sessionStorage.removeItem('adminSecret');
+        document.getElementById('authScreen').style.display = 'flex';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('authError').textContent = 'Invalid secret.';
+        secretInput.value = '';
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      sessionStorage.setItem('adminSecret', secret);
+      const data = await res.json();
+      render(data);
+    } catch (err) {
+      document.getElementById('loadingMsg').textContent = `Error: ${err.message}`;
+    }
+  }
+
+  function render(data) {
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    document.getElementById('statUsers').textContent = fmt(data.uniqueUsers);
+    document.getElementById('statActive').textContent = fmt(data.activeSubscriptions);
+    document.getElementById('statTotal').textContent = fmt(data.totalSubscriptions);
+    document.getElementById('statMatches').textContent = fmt(data.totalSlotMatches);
+    document.getElementById('statAlerts').textContent = fmt(data.totalAlertsSent);
+
+    const totalActive = data.activeSubscriptions || 1;
+    const apiEl = document.getElementById('apiBreakdown');
+    const apis = [
+      { key: 'teeitup', label: 'TeeItUp', cls: 'bar-teeitup' },
+      { key: 'foreup',  label: 'ForeUp',  cls: 'bar-foreup'  },
+      { key: 'golfnow', label: 'GolfNow', cls: 'bar-golfnow'  },
+    ];
+    apiEl.innerHTML = apis.map(a => {
+      const count = data.apiBreakdown?.[a.key] ?? 0;
+      const pct = Math.round((count / totalActive) * 100);
+      return `<div class="api-row">
+        <div class="api-name">${a.label} <span>${count}</span></div>
+        <div class="bar-track"><div class="bar-fill ${a.cls}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+
+    const coursesEl = document.getElementById('topCourses');
+    if (!data.topCourses?.length) {
+      coursesEl.innerHTML = '<p class="empty-note">No active subscriptions</p>';
+    } else {
+      coursesEl.innerHTML = data.topCourses.map(c =>
+        `<div class="course-row">
+          <span class="course-name">${c.name}</span>
+          <span class="course-count">${c.count}</span>
+        </div>`
+      ).join('');
+    }
+
+    const ts = new Date(data.generatedAt);
+    document.getElementById('generatedAt').textContent =
+      `Last updated ${ts.toLocaleString()}`;
+  }
+
+  function fmt(n) {
+    return (n ?? 0).toLocaleString();
+  }
+</script>
+</body>
+</html>
