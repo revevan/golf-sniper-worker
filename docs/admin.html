@@ -8,20 +8,18 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a2e;
-      color: #e0e0e0;
+      background: #f0f4f0;
+      color: #222;
       min-height: 100vh;
     }
     header {
-      background: #162032;
-      border-bottom: 1px solid #2a3a4a;
-      padding: 18px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      background: #2e7d32;
+      color: white;
+      padding: 20px;
+      text-align: center;
     }
-    header h1 { font-size: 1.15rem; font-weight: 700; color: #fff; }
-    header span { font-size: 0.78rem; color: #6aaa6e; background: #1e3a22; padding: 3px 9px; border-radius: 20px; font-weight: 600; letter-spacing: 0.04em; }
+    header h1 { font-size: 1.4rem; }
+    header p { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; }
     main { max-width: 860px; margin: 0 auto; padding: 28px 20px; }
 
     /* Auth screen */
@@ -33,39 +31,41 @@
       min-height: 60vh;
       gap: 14px;
     }
-    #authScreen h2 { font-size: 1rem; color: #aaa; font-weight: 500; }
+    #authScreen h2 { font-size: 1rem; color: #777; font-weight: 500; }
     #authScreen input {
-      padding: 11px 14px;
-      border: 1.5px solid #2e3e50;
-      border-radius: 9px;
-      background: #162032;
-      color: #e0e0e0;
-      font-size: 1rem;
+      padding: 9px 11px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fafafa;
+      color: #222;
+      font-size: 0.95rem;
       width: 280px;
       outline: none;
+      transition: border-color 0.15s;
     }
-    #authScreen input:focus { border-color: #4caf50; }
+    #authScreen input:focus { border-color: #4caf50; background: white; }
     #authScreen button {
       padding: 11px 28px;
-      background: #2e7d32;
+      background: #4caf50;
       color: white;
       border: none;
       border-radius: 9px;
       font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
+      transition: opacity 0.15s;
     }
-    #authScreen button:hover { background: #388e3c; }
-    #authError { color: #ef5350; font-size: 0.85rem; }
+    #authScreen button:hover { opacity: 0.88; }
+    #authError { color: #e53935; font-size: 0.85rem; }
 
     /* Dashboard */
     #dashboard { display: none; }
     .section-label {
-      font-size: 0.68rem;
+      font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #556;
+      letter-spacing: 0.06em;
+      color: #aaa;
       margin-bottom: 12px;
     }
     .stats-grid {
@@ -75,58 +75,53 @@
       margin-bottom: 28px;
     }
     .stat-card {
-      background: #162032;
-      border: 1px solid #2a3a4a;
-      border-radius: 12px;
+      background: white;
+      border-radius: 14px;
       padding: 18px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .stat-label {
-      font-size: 0.72rem;
-      color: #7a8a9a;
-      font-weight: 600;
+      font-size: 0.7rem;
+      color: #aaa;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       margin-bottom: 8px;
     }
     .stat-value {
       font-size: 2rem;
       font-weight: 800;
-      color: #fff;
+      color: #2e7d32;
       line-height: 1;
     }
-    .stat-value.green { color: #66bb6a; }
-    .stat-value.blue { color: #42a5f5; }
-    .stat-value.amber { color: #ffa726; }
-    .stat-value.purple { color: #ab47bc; }
-    .stat-value.teal { color: #26c6da; }
 
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
     @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
 
     .card {
-      background: #162032;
-      border: 1px solid #2a3a4a;
-      border-radius: 12px;
+      background: white;
+      border-radius: 14px;
       padding: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .card-title {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #7a8a9a;
+      color: #aaa;
       margin-bottom: 14px;
     }
 
     /* API breakdown bars */
     .api-row { margin-bottom: 12px; }
-    .api-name { font-size: 0.82rem; color: #ccc; margin-bottom: 5px; display: flex; justify-content: space-between; }
-    .api-name span { color: #fff; font-weight: 600; }
-    .bar-track { background: #1e2e3e; border-radius: 4px; height: 8px; overflow: hidden; }
+    .api-name { font-size: 0.82rem; color: #555; margin-bottom: 5px; display: flex; justify-content: space-between; }
+    .api-name span { color: #222; font-weight: 600; }
+    .bar-track { background: #f0f4f0; border-radius: 4px; height: 8px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
-    .bar-teeitup { background: #42a5f5; }
-    .bar-foreup { background: #66bb6a; }
-    .bar-golfnow { background: #ffa726; }
+    .bar-teeitup { background: #4caf50; }
+    .bar-foreup { background: #2e7d32; }
+    .bar-golfnow { background: #81c784; }
 
     /* Top courses table */
     .course-row {
@@ -134,42 +129,44 @@
       align-items: center;
       justify-content: space-between;
       padding: 8px 0;
-      border-bottom: 1px solid #1e2e3e;
+      border-bottom: 1px solid #f0f0f0;
       font-size: 0.85rem;
     }
     .course-row:last-child { border-bottom: none; }
-    .course-name { color: #ccc; }
+    .course-name { color: #444; }
     .course-count {
-      background: #1e3a22;
-      color: #66bb6a;
+      background: #e8f5e9;
+      color: #2e7d32;
       padding: 2px 9px;
       border-radius: 12px;
       font-size: 0.78rem;
       font-weight: 700;
     }
-    .empty-note { color: #556; font-size: 0.85rem; font-style: italic; }
+    .empty-note { color: #aaa; font-size: 0.85rem; font-style: italic; }
 
-    .meta { font-size: 0.75rem; color: #445; margin-top: 10px; text-align: right; }
+    .meta { font-size: 0.75rem; color: #aaa; margin-top: 10px; text-align: right; }
 
     .refresh-btn {
-      background: none;
-      border: 1px solid #2a3a4a;
-      color: #7a8a9a;
+      background: #eee;
+      border: none;
+      color: #444;
       padding: 6px 14px;
       border-radius: 7px;
       font-size: 0.8rem;
+      font-weight: 700;
       cursor: pointer;
       float: right;
       margin-top: -4px;
+      transition: opacity 0.15s;
     }
-    .refresh-btn:hover { border-color: #4caf50; color: #4caf50; }
-    #loadingMsg { color: #556; font-size: 0.9rem; margin: 40px 0; text-align: center; }
+    .refresh-btn:hover { opacity: 0.75; }
+    #loadingMsg { color: #aaa; font-size: 0.9rem; margin: 40px 0; text-align: center; }
   </style>
 </head>
 <body>
 <header>
-  <h1>Golf Sniper</h1>
-  <span>Admin</span>
+  <h1>⛳ LA Golf Tee Time Sniper</h1>
+  <p>Admin Dashboard</p>
 </header>
 <main>
   <div id="authScreen">
