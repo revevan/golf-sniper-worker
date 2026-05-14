@@ -3,6 +3,7 @@ import { fetchTeeItUp, filterTeeItUp } from './teeitup.js';
 import { fetchForeUp, filterForeUp } from './foreup.js';
 import { fetchGolfNow, filterGolfNow } from './golfnow.js';
 import { sendTelegram } from './telegram.js';
+import { incrementStat } from './stats.js';
 
 export async function runCron(env) {
   console.log(`Cron running — ${new Date().toISOString()}`);
@@ -74,6 +75,8 @@ export async function runCron(env) {
           env.KV.put(`notified:${sub.id}:${course.date}:${slot.time}`, '1', { expirationTtl: 90000 })
         ));
 
+        await incrementStat(env, 'stats:total_slot_matches', newSlots.length);
+
         const bookUrl = course.api === 'foreup'
           ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
           : course.api === 'golfnow'
@@ -84,6 +87,8 @@ export async function runCron(env) {
           const priceStr = slot.greenFee ? ` — $${slot.greenFee}/pp` : '';
           return `• ${slot.time} — ${slot.availableSpots} spot(s)${priceStr}`;
         }).join('\n');
+
+        await incrementStat(env, 'stats:total_alerts_sent');
 
         await sendTelegram(
           env.TELEGRAM_BOT_TOKEN,

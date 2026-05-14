@@ -1,6 +1,7 @@
 import { COURSES } from './courses.js';
 import { handleTelegramWebhook, sendTelegram } from './telegram.js';
 import { runCron } from './cron.js';
+import { incrementStat } from './stats.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -17,6 +18,18 @@ function json(data, status = 200) {
 function uuid() {
   return crypto.randomUUID();
 }
+
+async function listAllKeys(env, prefix) {
+  const keys = [];
+  let cursor;
+  do {
+    const result = await env.KV.list({ prefix, cursor });
+    keys.push(...result.keys);
+    cursor = result.list_complete ? undefined : result.cursor;
+  } while (cursor);
+  return keys;
+}
+
 
 async function handleRequest(req, env) {
   const url = new URL(req.url);
@@ -95,6 +108,8 @@ async function handleRequest(req, env) {
     const existing = await env.KV.get(userKey, 'json') ?? [];
     await env.KV.put(userKey, JSON.stringify([...existing, id]));
 
+    await incrementStat(env, 'stats:total_subscriptions');
+
     // Confirm via Telegram
     await sendTelegram(env.TELEGRAM_BOT_TOKEN, telegramChatId,
       `✅ *Alert set!*\n${course.name} on ${date}\n${earliestTime}–${latestTime} · ${minPlayers}+ players`
@@ -127,6 +142,52 @@ async function handleRequest(req, env) {
     await env.KV.put(userKey, JSON.stringify(existing.filter(i => i !== id)));
 
     return json({ message: 'Alert cancelled' });
+  }
+
+  // GET /admin/stats?secret=xxx — admin dashboard data
+  if (req.method === 'GET' && path === '/admin/stats') {
+    const secret = url.searchParams.get('secret');
+    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+
+    const [userKeys, subKeys] = await Promise.all([
+      listAllKeys(env, 'user:'),
+      listAllKeys(env, 'sub:'),
+    ]);
+
+    const [totalSubscriptions, totalAlertsSent, totalSlotMatches] = await Promise.all([
+      env.KV.get('stats:total_subscriptions'),
+      env.KV.get('stats:total_alerts_sent'),
+      env.KV.get('stats:total_slot_matches'),
+    ]);
+
+    // Fetch active subscription details for breakdown stats
+    const activeSubs = (await Promise.all(
+      subKeys.map(k => env.KV.get(k.name, 'json'))
+    )).filter(Boolean);
+
+    const courseCounts = {};
+    const apiCounts = { teeitup: 0, foreup: 0, golfnow: 0 };
+    for (const sub of activeSubs) {
+      courseCounts[sub.courseName] = (courseCounts[sub.courseName] ?? 0) + 1;
+      if (sub.api in apiCounts) apiCounts[sub.api]++;
+    }
+    const topCourses = Object.entries(courseCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => ({ name, count }));
+
+    return json({
+      uniqueUsers: userKeys.length,
+      activeSubscriptions: activeSubs.length,
+      totalSubscriptions: Number(totalSubscriptions ?? 0),
+      totalAlertsSent: Number(totalAlertsSent ?? 0),
+      totalSlotMatches: Number(totalSlotMatches ?? 0),
+      topCourses,
+      apiBreakdown: apiCounts,
+      generatedAt: new Date().toISOString(),
+    });
   }
 
   return json({ error: 'Not found' }, 404);
