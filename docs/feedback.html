@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⛳ LA Golf Tee Time Sniper — Feedback</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f0;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #2e7d32;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.4rem; }
+    header p { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; }
+    main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+      flex: 1;
+      width: 100%;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.82rem;
+      color: #999;
+    }
+    footer a { color: #4caf50; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #aaa;
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+      margin-top: 14px;
+    }
+    label:first-of-type { margin-top: 0; }
+    label .optional {
+      font-weight: 400;
+      color: #aaa;
+      font-size: 0.78rem;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      background: #fafafa;
+      transition: border-color 0.15s;
+      appearance: none;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #4caf50; background: white; }
+    textarea { resize: vertical; min-height: 100px; }
+    .type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .type-btn {
+      padding: 10px 8px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      background: #fafafa;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #555;
+    }
+    .type-btn:hover { border-color: #a5d6a7; }
+    .type-btn.selected {
+      border-color: #4caf50;
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .type-icon { font-size: 1.2rem; display: block; margin-bottom: 3px; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 16px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-green { background: #4caf50; color: white; }
+    .extra-fields { display: none; }
+    .success-banner {
+      background: #e8f5e9;
+      border: 1.5px solid #a5d6a7;
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      color: #2e7d32;
+      display: none;
+    }
+    .success-banner .icon { font-size: 2rem; margin-bottom: 8px; }
+    .success-banner p { font-size: 0.88rem; margin-top: 6px; opacity: 0.8; }
+    .error-msg { color: #e53935; font-size: 0.82rem; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>⛳ LA Golf Tee Time Sniper</h1>
+  <p>Feedback &amp; Requests</p>
+</header>
+<main>
+  <div class="card" id="formCard">
+    <div class="card-title">What can we help with?</div>
+
+    <div class="type-grid">
+      <button class="type-btn" data-type="course" onclick="selectType('course')">
+        <span class="type-icon">🏌️</span>New Course
+      </button>
+      <button class="type-btn" data-type="bug" onclick="selectType('bug')">
+        <span class="type-icon">🐛</span>Bug Report
+      </button>
+      <button class="type-btn" data-type="feature" onclick="selectType('feature')">
+        <span class="type-icon">💡</span>Feature Request
+      </button>
+      <button class="type-btn" data-type="feedback" onclick="selectType('feedback')">
+        <span class="type-icon">💬</span>General Feedback
+      </button>
+    </div>
+
+    <div class="extra-fields" id="courseFields">
+      <label>Course Name</label>
+      <input type="text" id="courseName" placeholder="e.g. Rancho Park Golf Course" />
+      <label>Website or Booking URL <span class="optional">(optional)</span></label>
+      <input type="url" id="courseUrl" placeholder="https://..." />
+    </div>
+
+    <label id="messageLabel">Details</label>
+    <textarea id="message" placeholder="Tell us more..."></textarea>
+
+    <label>Contact <span class="optional">(optional — email or Telegram handle if you'd like a reply)</span></label>
+    <input type="text" id="contact" placeholder="you@email.com or @yourhandle" />
+
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="btn btn-green" id="submitBtn" onclick="submit()" disabled>Submit</button>
+  </div>
+
+  <div class="success-banner" id="successBanner">
+    <div class="icon">✅</div>
+    <strong>Got it — thanks!</strong>
+    <p>Your submission was received. We'll take a look soon.</p>
+    <button class="btn btn-green" style="margin-top:16px" onclick="reset()">Submit Another</button>
+  </div>
+</main>
+<footer>
+  <a href="index.html">← Back to Tee Time Sniper</a>
+</footer>
+
+<script>
+  const API = 'https://golf-sniper.evanwkennedy.workers.dev';
+
+  let selectedType = null;
+
+  const placeholders = {
+    course: 'Which course would you like added? Any details about the region or booking system are helpful.',
+    bug: 'What went wrong? What were you trying to do when it happened?',
+    feature: 'What would you like the app to do?',
+    feedback: 'Any thoughts, compliments, or suggestions welcome!',
+  };
+
+  function selectType(type) {
+    selectedType = type;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b.dataset.type === type));
+    document.getElementById('courseFields').style.display = type === 'course' ? 'block' : 'none';
+    document.getElementById('message').placeholder = placeholders[type] ?? 'Tell us more...';
+    document.getElementById('submitBtn').disabled = false;
+  }
+
+  async function submit() {
+    const message = document.getElementById('message').value.trim();
+    const errorEl = document.getElementById('errorMsg');
+    errorEl.style.display = 'none';
+
+    if (!selectedType) { showError('Please select a category.'); return; }
+    if (!message) { showError('Please add a message.'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    try {
+      const res = await fetch(`${API}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: selectedType,
+          message,
+          courseName: document.getElementById('courseName').value.trim() || null,
+          courseUrl: document.getElementById('courseUrl').value.trim() || null,
+          contact: document.getElementById('contact').value.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Server error');
+
+      document.getElementById('formCard').style.display = 'none';
+      document.getElementById('successBanner').style.display = 'block';
+    } catch (err) {
+      showError(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Submit';
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function reset() {
+    selectedType = null;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('message').value = '';
+    document.getElementById('courseName').value = '';
+    document.getElementById('courseUrl').value = '';
+    document.getElementById('contact').value = '';
+    document.getElementById('courseFields').style.display = 'none';
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').textContent = 'Submit';
+    document.getElementById('errorMsg').style.display = 'none';
+    document.getElementById('formCard').style.display = 'block';
+    document.getElementById('successBanner').style.display = 'none';
+  }
+</script>
+</body>
+</html>

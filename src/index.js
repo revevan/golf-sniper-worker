@@ -144,6 +144,66 @@ async function handleRequest(req, env) {
     return json({ message: 'Alert cancelled' });
   }
 
+  // POST /feedback — submit feedback/request
+  if (req.method === 'POST' && path === '/feedback') {
+    const body = await req.json();
+    const { type, message, courseName, courseUrl, contact } = body;
+
+    const validTypes = ['course', 'bug', 'feedback', 'feature'];
+    if (!validTypes.includes(type)) return json({ error: 'Invalid type' }, 400);
+    if (!message?.trim()) return json({ error: 'message required' }, 400);
+
+    const id = uuid();
+    await env.KV.put(`feedback:${id}`, JSON.stringify({
+      id,
+      type,
+      message: message.trim(),
+      courseName: courseName?.trim() || null,
+      courseUrl: courseUrl?.trim() || null,
+      contact: contact?.trim() || null,
+      createdAt: new Date().toISOString(),
+      resolved: false,
+    }));
+
+    return json({ id, message: 'Submitted — thank you!' });
+  }
+
+  // GET /admin/feedback?secret=xxx — list all submissions
+  if (req.method === 'GET' && path === '/admin/feedback') {
+    const secret = url.searchParams.get('secret');
+    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+
+    const keys = await listAllKeys(env, 'feedback:');
+    const submissions = (await Promise.all(keys.map(k => env.KV.get(k.name, 'json'))))
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return json(submissions);
+  }
+
+  // POST /admin/feedback/:id/resolve?secret=xxx — toggle resolved
+  if (req.method === 'POST' && /^\/admin\/feedback\/[^/]+\/resolve$/.test(path)) {
+    const secret = url.searchParams.get('secret');
+    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+
+    const id = path.split('/')[3];
+    const item = await env.KV.get(`feedback:${id}`, 'json');
+    if (!item) return json({ error: 'Not found' }, 404);
+
+    item.resolved = !item.resolved;
+    await env.KV.put(`feedback:${id}`, JSON.stringify(item));
+    return json({ resolved: item.resolved });
+  }
+
+  // DELETE /admin/feedback/:id?secret=xxx — delete submission
+  if (req.method === 'DELETE' && /^\/admin\/feedback\/[^/]+$/.test(path)) {
+    const secret = url.searchParams.get('secret');
+    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+
+    await env.KV.delete(`feedback:${path.split('/').pop()}`);
+    return json({ message: 'Deleted' });
+  }
+
   // GET /admin/stats?secret=xxx — admin dashboard data
   if (req.method === 'GET' && path === '/admin/stats') {
     const secret = url.searchParams.get('secret');

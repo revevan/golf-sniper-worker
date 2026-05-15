@@ -103,6 +103,7 @@
       border-radius: 14px;
       padding: 18px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 14px;
     }
     .card-title {
       font-size: 0.7rem;
@@ -111,7 +112,19 @@
       letter-spacing: 0.06em;
       color: #aaa;
       margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
+    .badge {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .badge.orange { background: #fff3e0; color: #e65100; }
 
     /* API breakdown bars */
     .api-row { margin-bottom: 12px; }
@@ -144,7 +157,7 @@
     }
     .empty-note { color: #aaa; font-size: 0.85rem; font-style: italic; }
 
-    .meta { font-size: 0.75rem; color: #aaa; margin-top: 10px; text-align: right; }
+    .meta { font-size: 0.75rem; color: #aaa; margin-top: 10px; text-align: right; margin-bottom: 28px; }
 
     .refresh-btn {
       background: #eee;
@@ -155,12 +168,80 @@
       font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
-      float: right;
-      margin-top: -4px;
+      margin-left: auto;
       transition: opacity 0.15s;
     }
     .refresh-btn:hover { opacity: 0.75; }
     #loadingMsg { color: #aaa; font-size: 0.9rem; margin: 40px 0; text-align: center; }
+
+    /* Submissions */
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .filter-btn {
+      padding: 4px 12px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 20px;
+      background: white;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #555;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .filter-btn.active {
+      border-color: #4caf50;
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .submission {
+      border-bottom: 1px solid #f0f0f0;
+      padding: 12px 0;
+      font-size: 0.85rem;
+    }
+    .submission:last-child { border-bottom: none; }
+    .submission.resolved { opacity: 0.45; }
+    .sub-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+    .sub-type {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .type-course  { background: #e3f2fd; color: #1565c0; }
+    .type-bug     { background: #fce4ec; color: #c62828; }
+    .type-feature { background: #fff8e1; color: #f57f17; }
+    .type-feedback{ background: #f3e5f5; color: #6a1b9a; }
+    .sub-date { color: #aaa; font-size: 0.75rem; margin-left: auto; }
+    .sub-message { color: #333; line-height: 1.5; margin-bottom: 6px; }
+    .sub-meta { font-size: 0.75rem; color: #777; margin-bottom: 8px; }
+    .sub-meta span { margin-right: 12px; }
+    .sub-actions { display: flex; gap: 8px; }
+    .action-btn {
+      padding: 4px 12px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 7px;
+      background: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #555;
+      transition: opacity 0.15s;
+    }
+    .action-btn:hover { opacity: 0.7; }
+    .action-btn.resolve { border-color: #a5d6a7; color: #2e7d32; }
+    .action-btn.unresolve { border-color: #e0e0e0; color: #aaa; }
+    .action-btn.delete { border-color: #ffcdd2; color: #e53935; }
   </style>
 </head>
 <body>
@@ -172,7 +253,7 @@
   <div id="authScreen">
     <h2>Enter admin secret</h2>
     <input type="password" id="secretInput" placeholder="Secret key" autocomplete="off" />
-    <button onclick="loadStats()">View Dashboard</button>
+    <button onclick="loadAll()">View Dashboard</button>
     <div id="authError"></div>
   </div>
 
@@ -180,61 +261,80 @@
     <p id="loadingMsg">Loading...</p>
 
     <div id="content" style="display:none">
-      <div class="section-label">Overview <button class="refresh-btn" onclick="loadStats()">Refresh</button></div>
+      <div class="section-label" style="display:flex;align-items:center;">
+        Overview
+        <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+      </div>
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Unique Users</div>
-          <div class="stat-value green" id="statUsers">—</div>
+          <div class="stat-value" id="statUsers">—</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Active Alerts</div>
-          <div class="stat-value blue" id="statActive">—</div>
+          <div class="stat-value" id="statActive">—</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Total Requests</div>
-          <div class="stat-value amber" id="statTotal">—</div>
+          <div class="stat-value" id="statTotal">—</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Slot Matches</div>
-          <div class="stat-value purple" id="statMatches">—</div>
+          <div class="stat-value" id="statMatches">—</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Alerts Sent</div>
-          <div class="stat-value teal" id="statAlerts">—</div>
+          <div class="stat-value" id="statAlerts">—</div>
         </div>
       </div>
 
       <div class="row">
-        <div class="card">
+        <div class="card" style="margin-bottom:0">
           <div class="card-title">API Breakdown (active)</div>
           <div id="apiBreakdown"></div>
         </div>
-        <div class="card">
+        <div class="card" style="margin-bottom:0">
           <div class="card-title">Top Requested Courses (active)</div>
           <div id="topCourses"></div>
         </div>
       </div>
 
       <p class="meta" id="generatedAt"></p>
+
+      <!-- Submissions -->
+      <div class="section-label" style="display:flex;align-items:center;">
+        Submissions
+        <span class="badge orange" id="unresolvedBadge" style="display:none"></span>
+      </div>
+      <div class="card">
+        <div class="filter-row" id="filterRow">
+          <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+          <button class="filter-btn" data-filter="course" onclick="setFilter('course')">🏌️ New Course</button>
+          <button class="filter-btn" data-filter="bug" onclick="setFilter('bug')">🐛 Bug Report</button>
+          <button class="filter-btn" data-filter="feature" onclick="setFilter('feature')">💡 Feature Request</button>
+          <button class="filter-btn" data-filter="feedback" onclick="setFilter('feedback')">💬 Feedback</button>
+          <button class="filter-btn" data-filter="unresolved" onclick="setFilter('unresolved')">Unresolved</button>
+        </div>
+        <div id="submissionsList"><p class="empty-note">No submissions yet.</p></div>
+      </div>
     </div>
   </div>
 </main>
 
 <script>
   const API = 'https://golf-sniper.evanwkennedy.workers.dev';
+  let secret = '';
+  let allSubmissions = [];
+  let activeFilter = 'all';
 
   const secretInput = document.getElementById('secretInput');
-  secretInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadStats(); });
+  secretInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadAll(); });
 
-  // Restore secret from sessionStorage
   const storedSecret = sessionStorage.getItem('adminSecret');
-  if (storedSecret) {
-    secretInput.value = storedSecret;
-    loadStats();
-  }
+  if (storedSecret) { secretInput.value = storedSecret; loadAll(); }
 
-  async function loadStats() {
-    const secret = secretInput.value.trim();
+  async function loadAll() {
+    secret = secretInput.value.trim();
     if (!secret) return;
 
     document.getElementById('authError').textContent = '';
@@ -244,8 +344,12 @@
     document.getElementById('content').style.display = 'none';
 
     try {
-      const res = await fetch(`${API}/admin/stats?secret=${encodeURIComponent(secret)}`);
-      if (res.status === 401) {
+      const [statsRes, feedbackRes] = await Promise.all([
+        fetch(`${API}/admin/stats?secret=${encodeURIComponent(secret)}`),
+        fetch(`${API}/admin/feedback?secret=${encodeURIComponent(secret)}`),
+      ]);
+
+      if (statsRes.status === 401) {
         sessionStorage.removeItem('adminSecret');
         document.getElementById('authScreen').style.display = 'flex';
         document.getElementById('dashboard').style.display = 'none';
@@ -253,20 +357,23 @@
         secretInput.value = '';
         return;
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!statsRes.ok) throw new Error(`HTTP ${statsRes.status}`);
 
       sessionStorage.setItem('adminSecret', secret);
-      const data = await res.json();
-      render(data);
+      const stats = await statsRes.json();
+      allSubmissions = feedbackRes.ok ? await feedbackRes.json() : [];
+
+      renderStats(stats);
+      renderSubmissions();
+
+      document.getElementById('loadingMsg').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
     } catch (err) {
       document.getElementById('loadingMsg').textContent = `Error: ${err.message}`;
     }
   }
 
-  function render(data) {
-    document.getElementById('loadingMsg').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-
+  function renderStats(data) {
     document.getElementById('statUsers').textContent = fmt(data.uniqueUsers);
     document.getElementById('statActive').textContent = fmt(data.activeSubscriptions);
     document.getElementById('statTotal').textContent = fmt(data.totalSubscriptions);
@@ -301,14 +408,82 @@
       ).join('');
     }
 
-    const ts = new Date(data.generatedAt);
     document.getElementById('generatedAt').textContent =
-      `Last updated ${ts.toLocaleString()}`;
+      `Last updated ${new Date(data.generatedAt).toLocaleString()}`;
   }
 
-  function fmt(n) {
-    return (n ?? 0).toLocaleString();
+  function setFilter(f) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+    renderSubmissions();
   }
+
+  function renderSubmissions() {
+    const unresolved = allSubmissions.filter(s => !s.resolved).length;
+    const badge = document.getElementById('unresolvedBadge');
+    if (unresolved > 0) {
+      badge.textContent = `${unresolved} unresolved`;
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    let filtered = allSubmissions;
+    if (activeFilter === 'unresolved') filtered = allSubmissions.filter(s => !s.resolved);
+    else if (activeFilter !== 'all') filtered = allSubmissions.filter(s => s.type === activeFilter);
+
+    const el = document.getElementById('submissionsList');
+    if (!filtered.length) {
+      el.innerHTML = '<p class="empty-note">No submissions match this filter.</p>';
+      return;
+    }
+
+    const typeLabels = { course: 'New Course', bug: 'Bug Report', feature: 'Feature Request', feedback: 'Feedback' };
+    el.innerHTML = filtered.map(s => {
+      const date = new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const metaParts = [];
+      if (s.courseName) metaParts.push(`<span>📍 ${esc(s.courseName)}</span>`);
+      if (s.courseUrl) metaParts.push(`<span><a href="${esc(s.courseUrl)}" target="_blank" style="color:#4caf50;">${esc(s.courseUrl)}</a></span>`);
+      if (s.contact) metaParts.push(`<span>✉️ ${esc(s.contact)}</span>`);
+
+      return `<div class="submission${s.resolved ? ' resolved' : ''}" id="sub-${s.id}">
+        <div class="sub-header">
+          <span class="sub-type type-${s.type}">${typeLabels[s.type] ?? s.type}</span>
+          <span class="sub-date">${date}</span>
+        </div>
+        <div class="sub-message">${esc(s.message)}</div>
+        ${metaParts.length ? `<div class="sub-meta">${metaParts.join('')}</div>` : ''}
+        <div class="sub-actions">
+          <button class="action-btn ${s.resolved ? 'unresolve' : 'resolve'}"
+            onclick="toggleResolve('${s.id}', ${s.resolved})">
+            ${s.resolved ? 'Mark Unresolved' : 'Mark Resolved'}
+          </button>
+          <button class="action-btn delete" onclick="deleteSubmission('${s.id}')">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function toggleResolve(id, currentlyResolved) {
+    const res = await fetch(`${API}/admin/feedback/${id}/resolve?secret=${encodeURIComponent(secret)}`, { method: 'POST' });
+    if (!res.ok) return;
+    const item = allSubmissions.find(s => s.id === id);
+    if (item) { item.resolved = !currentlyResolved; renderSubmissions(); }
+  }
+
+  async function deleteSubmission(id) {
+    if (!confirm('Delete this submission?')) return;
+    const res = await fetch(`${API}/admin/feedback/${id}?secret=${encodeURIComponent(secret)}`, { method: 'DELETE' });
+    if (!res.ok) return;
+    allSubmissions = allSubmissions.filter(s => s.id !== id);
+    renderSubmissions();
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmt(n) { return (n ?? 0).toLocaleString(); }
 </script>
 </body>
 </html>
