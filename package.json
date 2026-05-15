@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "vitest": "^4.1.6",
     "wrangler": "^4.0.0"
   }
 }
