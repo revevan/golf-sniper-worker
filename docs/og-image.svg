@@ -9,56 +9,23 @@
   <!-- Background -->
   <rect width="1200" height="630" fill="url(#bg)"/>
 
-  <!-- Decorative circles (fairway vibes) -->
+  <!-- Decorative circles -->
   <circle cx="1080" cy="100" r="220" fill="rgba(255,255,255,0.04)"/>
   <circle cx="1080" cy="100" r="150" fill="rgba(255,255,255,0.05)"/>
   <circle cx="1080" cy="100" r="80"  fill="rgba(255,255,255,0.06)"/>
   <circle cx="160"  cy="540" r="160" fill="rgba(0,0,0,0.08)"/>
 
-  <!-- Golf hole + flag (SVG primitives, no emoji) -->
-  <!-- Flag pole -->
-  <line x1="128" y1="160" x2="128" y2="310" stroke="white" stroke-width="6" stroke-linecap="round"/>
-  <!-- Flag -->
-  <polygon points="128,160 192,185 128,210" fill="white" opacity="0.95"/>
-  <!-- Ground mound -->
-  <ellipse cx="128" cy="318" rx="42" ry="10" fill="rgba(0,0,0,0.25)"/>
-  <!-- Hole cup -->
-  <ellipse cx="128" cy="314" rx="18" ry="6" fill="#0d3b12"/>
+  <!-- Golf hole + flag -->
+  <line x1="600" y1="170" x2="600" y2="340" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <polygon points="600,170 680,200 600,230" fill="white" opacity="0.95"/>
+  <ellipse cx="600" cy="348" rx="52" ry="12" fill="rgba(0,0,0,0.25)"/>
+  <ellipse cx="600" cy="344" rx="22" ry="7" fill="#0d3b12"/>
 
-  <!-- App name -->
-  <text x="92" y="410"
+  <!-- Title -->
+  <text x="600" y="450"
+        text-anchor="middle"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="72" font-weight="800" fill="white" letter-spacing="-1">
-    LA Golf Tee Time Sniper
-  </text>
-
-  <!-- Tagline -->
-  <text x="92" y="475"
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="34" fill="rgba(255,255,255,0.82)" letter-spacing="0.2">
-    Telegram alerts the moment tee times open at LA-area courses
-  </text>
-
-  <!-- Pills row -->
-  <rect x="92"  y="510" width="160" height="48" rx="24" fill="rgba(255,255,255,0.14)"/>
-  <text x="172" y="541" text-anchor="middle"
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="22" fill="white">Free</text>
-
-  <rect x="266" y="510" width="196" height="48" rx="24" fill="rgba(255,255,255,0.14)"/>
-  <text x="364" y="541" text-anchor="middle"
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="22" fill="white">Open Source</text>
-
-  <rect x="476" y="510" width="228" height="48" rx="24" fill="rgba(255,255,255,0.14)"/>
-  <text x="590" y="541" text-anchor="middle"
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="22" fill="white">No sign-up needed</text>
-
-  <!-- URL -->
-  <text x="92" y="608"
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="22" fill="rgba(255,255,255,0.50)">
-    revevan.github.io/golf-sniper-worker
+        font-size="88" font-weight="800" fill="white" letter-spacing="-1">
+    Tee Time Sniper
   </text>
 </svg>
