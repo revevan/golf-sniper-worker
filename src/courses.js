@@ -52,4 +52,9 @@ export const COURSES = [
   { name: 'Rancho San Joaquin', region: 'Orange County', city: 'Irvine', holes: [18], api: 'teeitup', alias: 'rancho-san-joaquin-golf-club' },
   { name: 'River View Golf Course', region: 'Orange County', city: 'Santa Ana', holes: [18], api: 'teeitup', alias: 'river-view-golf-club' },
   { name: 'San Clemente Municipal Golf Course', region: 'Orange County', city: 'San Clemente', holes: [18], api: 'foreup', facilityId: '18754', scheduleId: '413' },
+
+  // Atlanta
+  { name: 'Browns Mill Golf Course', region: 'Atlanta', city: 'Atlanta', holes: [18], api: 'teeitup', alias: 'browns-mill-golf-course' },
+  { name: 'Chastain Park Golf Course', region: 'Atlanta', city: 'Atlanta', holes: [18], api: 'teeitup', alias: 'chastain-park' },
+  { name: "Alfred 'Tup' Holmes Golf Course", region: 'Atlanta', city: 'Atlanta', holes: [18], api: 'teeitup', alias: 'alfred-tup-holmes' },
 ];
