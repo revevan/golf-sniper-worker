@@ -30,6 +30,12 @@ async function listAllKeys(env, prefix) {
   return keys;
 }
 
+function isAdminAuthorized(req, env) {
+  const auth = req.headers.get('Authorization') ?? '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  return env.ADMIN_SECRET && token === env.ADMIN_SECRET;
+}
+
 
 async function handleRequest(req, env) {
   const url = new URL(req.url);
@@ -170,8 +176,7 @@ async function handleRequest(req, env) {
 
   // GET /admin/feedback?secret=xxx — list all submissions
   if (req.method === 'GET' && path === '/admin/feedback') {
-    const secret = url.searchParams.get('secret');
-    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
 
     const keys = await listAllKeys(env, 'feedback:');
     const submissions = (await Promise.all(keys.map(k => env.KV.get(k.name, 'json'))))
@@ -183,8 +188,7 @@ async function handleRequest(req, env) {
 
   // POST /admin/feedback/:id/resolve?secret=xxx — toggle resolved
   if (req.method === 'POST' && /^\/admin\/feedback\/[^/]+\/resolve$/.test(path)) {
-    const secret = url.searchParams.get('secret');
-    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
 
     const id = path.split('/')[3];
     const item = await env.KV.get(`feedback:${id}`, 'json');
@@ -197,8 +201,7 @@ async function handleRequest(req, env) {
 
   // DELETE /admin/feedback/:id?secret=xxx — delete submission
   if (req.method === 'DELETE' && /^\/admin\/feedback\/[^/]+$/.test(path)) {
-    const secret = url.searchParams.get('secret');
-    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
 
     await env.KV.delete(`feedback:${path.split('/').pop()}`);
     return json({ message: 'Deleted' });
@@ -206,10 +209,7 @@ async function handleRequest(req, env) {
 
   // GET /admin/stats?secret=xxx — admin dashboard data
   if (req.method === 'GET' && path === '/admin/stats') {
-    const secret = url.searchParams.get('secret');
-    if (!env.ADMIN_SECRET || secret !== env.ADMIN_SECRET) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
 
     const [userKeys, subKeys] = await Promise.all([
       listAllKeys(env, 'user:'),

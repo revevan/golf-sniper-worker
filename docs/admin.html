@@ -345,9 +345,10 @@
     document.getElementById('content').style.display = 'none';
 
     try {
+      const headers = { 'Authorization': `Bearer ${secret}` };
       const [statsRes, feedbackRes] = await Promise.all([
-        fetch(`${API}/admin/stats?secret=${encodeURIComponent(secret)}`),
-        fetch(`${API}/admin/feedback?secret=${encodeURIComponent(secret)}`),
+        fetch(`${API}/admin/stats`, { headers }),
+        fetch(`${API}/admin/feedback`, { headers }),
       ]);
 
       if (statsRes.status === 401) {
@@ -466,7 +467,7 @@
   }
 
   async function toggleResolve(id, currentlyResolved) {
-    const res = await fetch(`${API}/admin/feedback/${id}/resolve?secret=${encodeURIComponent(secret)}`, { method: 'POST' });
+    const res = await fetch(`${API}/admin/feedback/${id}/resolve`, { method: 'POST', headers: { 'Authorization': `Bearer ${secret}` } });
     if (!res.ok) return;
     const item = allSubmissions.find(s => s.id === id);
     if (item) { item.resolved = !currentlyResolved; renderSubmissions(); }
@@ -474,7 +475,7 @@
 
   async function deleteSubmission(id) {
     if (!confirm('Delete this submission?')) return;
-    const res = await fetch(`${API}/admin/feedback/${id}?secret=${encodeURIComponent(secret)}`, { method: 'DELETE' });
+    const res = await fetch(`${API}/admin/feedback/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${secret}` } });
     if (!res.ok) return;
     allSubmissions = allSubmissions.filter(s => s.id !== id);
     renderSubmissions();
