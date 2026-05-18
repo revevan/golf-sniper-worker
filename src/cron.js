@@ -7,6 +7,7 @@ import { incrementStat } from './stats.js';
 
 export async function runCron(env) {
   console.log(`Cron running — ${new Date().toISOString()}`);
+  const statDeltas = {}; // accumulate KV stat writes; flush once at end
 
   // Load all active subscriptions
   const keys = await env.KV.list({ prefix: 'sub:' });
@@ -56,17 +57,13 @@ export async function runCron(env) {
 
         console.log(`Sub ${sub.id} (${sub.earliestTime}–${sub.latestTime}, ${sub.minPlayers}p, ${sub.holes}h): ${matches.length} match(es)`);
 
-        // Filter to only slots not yet notified
-        const newSlots = [];
-        for (const slot of matches) {
-          const dedupeKey = `notified:${sub.id}:${course.date}:${slot.time}`;
-          const already = await env.KV.get(dedupeKey);
-          if (already) {
-            console.log(`Skipping ${slot.time} — already notified`);
-          } else {
-            newSlots.push(slot);
-          }
-        }
+        // Filter to only slots not yet notified (parallel KV reads)
+        const dedupeKeys = matches.map(slot => `notified:${sub.id}:${course.date}:${slot.time}`);
+        const alreadyFlags = await Promise.all(dedupeKeys.map(k => env.KV.get(k)));
+        const newSlots = matches.filter((_, i) => {
+          if (alreadyFlags[i]) { console.log(`Skipping ${matches[i].time} — already notified`); return false; }
+          return true;
+        });
 
         if (!newSlots.length) continue;
 
@@ -75,7 +72,7 @@ export async function runCron(env) {
           env.KV.put(`notified:${sub.id}:${course.date}:${slot.time}`, '1', { expirationTtl: 90000 })
         ));
 
-        await incrementStat(env, 'stats:total_slot_matches', newSlots.length);
+        statDeltas['stats:total_slot_matches'] = (statDeltas['stats:total_slot_matches'] ?? 0) + newSlots.length;
 
         const bookUrl = course.api === 'foreup'
           ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
@@ -88,7 +85,7 @@ export async function runCron(env) {
           return `• ${slot.time} — ${slot.availableSpots} spot(s)${priceStr}`;
         }).join('\n');
 
-        await incrementStat(env, 'stats:total_alerts_sent');
+        statDeltas['stats:total_alerts_sent'] = (statDeltas['stats:total_alerts_sent'] ?? 0) + 1;
 
         await sendTelegram(
           env.TELEGRAM_BOT_TOKEN,
@@ -106,4 +103,11 @@ export async function runCron(env) {
       console.error(`Error checking ${course.courseKey ?? course.facilityId} on ${course.date}:`, err.message);
     }
   }
+
+  // Flush accumulated stat increments in parallel (one read+write per key)
+  await Promise.all(
+    Object.entries(statDeltas).map(async ([key, delta]) => {
+      await incrementStat(env, key, delta);
+    })
+  );
 }
