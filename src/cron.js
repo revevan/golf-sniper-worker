@@ -67,13 +67,6 @@ export async function runCron(env) {
 
         if (!newSlots.length) continue;
 
-        // Mark all new slots as notified
-        await Promise.all(newSlots.map(slot =>
-          env.KV.put(`notified:${sub.id}:${course.date}:${slot.time}`, '1', { expirationTtl: 90000 })
-        ));
-
-        statDeltas['stats:total_slot_matches'] = (statDeltas['stats:total_slot_matches'] ?? 0) + newSlots.length;
-
         const bookUrl = course.api === 'foreup'
           ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
           : course.api === 'golfnow'
@@ -85,8 +78,7 @@ export async function runCron(env) {
           return `• ${slot.time} — ${slot.availableSpots} spot(s)${priceStr}`;
         }).join('\n');
 
-        statDeltas['stats:total_alerts_sent'] = (statDeltas['stats:total_alerts_sent'] ?? 0) + 1;
-
+        // Send first — only mark as notified after a successful send
         await sendTelegram(
           env.TELEGRAM_BOT_TOKEN,
           sub.telegramChatId,
@@ -95,6 +87,14 @@ export async function runCron(env) {
           `${lines}\n\n` +
           `[Book now](${bookUrl})`
         );
+
+        // Mark slots as notified only after Telegram succeeds
+        await Promise.all(newSlots.map(slot =>
+          env.KV.put(`notified:${sub.id}:${course.date}:${slot.time}`, '1', { expirationTtl: 90000 })
+        ));
+
+        statDeltas['stats:total_slot_matches'] = (statDeltas['stats:total_slot_matches'] ?? 0) + newSlots.length;
+        statDeltas['stats:total_alerts_sent'] = (statDeltas['stats:total_alerts_sent'] ?? 0) + 1;
       }
 
       // Polite delay between course API calls
