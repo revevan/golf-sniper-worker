@@ -7,7 +7,8 @@ import { incrementStat } from './stats.js';
 
 export async function runCron(env) {
   console.log(`Cron running — ${new Date().toISOString()}`);
-  const statDeltas = {}; // accumulate KV stat writes; flush once at end
+  const statDeltas = {};
+  const summary = { subsChecked: 0, alertsSent: 0, errors: 0 };
 
   // Load all active subscriptions
   const keys = await env.KV.list({ prefix: 'sub:' });
@@ -49,6 +50,7 @@ export async function runCron(env) {
       console.log(`${course.courseKey ?? course.facilityId} on ${course.date}: ${allSlots.length} raw slot(s) from API`);
 
       for (const sub of groupSubs) {
+        summary.subsChecked++;
         const matches = course.api === 'teeitup'
           ? filterTeeItUp(allSlots, sub)
           : course.api === 'foreup'
@@ -87,12 +89,14 @@ export async function runCron(env) {
           `${lines}\n\n` +
           `[Book now](${bookUrl})`
         );
+        console.log(`Alert sent — sub ${sub.id} (${sub.courseName} ${course.date}): ${newSlots.map(s => s.time).join(', ')}`);
 
         // Mark slots as notified only after Telegram succeeds
         await Promise.all(newSlots.map(slot =>
           env.KV.put(`notified:${sub.id}:${course.date}:${slot.time}`, '1', { expirationTtl: 90000 })
         ));
 
+        summary.alertsSent++;
         statDeltas['stats:total_slot_matches'] = (statDeltas['stats:total_slot_matches'] ?? 0) + newSlots.length;
         statDeltas['stats:total_alerts_sent'] = (statDeltas['stats:total_alerts_sent'] ?? 0) + 1;
       }
@@ -100,6 +104,7 @@ export async function runCron(env) {
       // Polite delay between course API calls
       await new Promise(r => setTimeout(r, 500));
     } catch (err) {
+      summary.errors++;
       console.error(`Error checking ${course.courseKey ?? course.facilityId} on ${course.date}:`, err.message);
     }
   }
@@ -110,4 +115,6 @@ export async function runCron(env) {
       await incrementStat(env, key, delta);
     })
   );
+
+  console.log(`Cron complete — checked: ${summary.subsChecked}, alerts sent: ${summary.alertsSent}, errors: ${summary.errors}`);
 }
