@@ -2,6 +2,7 @@ import { COURSES } from './courses.js';
 import { fetchTeeItUp, filterTeeItUp } from './teeitup.js';
 import { fetchForeUp, filterForeUp } from './foreup.js';
 import { fetchGolfNow, filterGolfNow } from './golfnow.js';
+import { fetchOttoGolf, filterOttoGolf } from './ottogolf.js';
 import { sendTelegram } from './telegram.js';
 import { incrementStat } from './stats.js';
 
@@ -45,6 +46,8 @@ export async function runCron(env) {
         const minP = Math.min(...groupSubs.map(s => s.minPlayers));
         const holes = groupSubs[0].holes;
         allSlots = await fetchGolfNow(course.facilityId, course.date, minP, holes);
+      } else if (course.api === 'ottogolf') {
+        allSlots = await fetchOttoGolf(course.facilityId, course.scheduleId, course.date);
       }
 
       console.log(`${course.courseKey ?? course.facilityId} on ${course.date}: ${allSlots.length} raw slot(s) from API`);
@@ -55,6 +58,8 @@ export async function runCron(env) {
           ? filterTeeItUp(allSlots, sub)
           : course.api === 'foreup'
           ? filterForeUp(allSlots, sub)
+          : course.api === 'ottogolf'
+          ? filterOttoGolf(allSlots, sub)
           : filterGolfNow(allSlots, sub);
 
         console.log(`Sub ${sub.id} (${sub.earliestTime}–${sub.latestTime}, ${sub.minPlayers}p, ${sub.holes}h): ${matches.length} match(es)`);
@@ -73,6 +78,8 @@ export async function runCron(env) {
           ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
           : course.api === 'golfnow'
           ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search`
+          : course.api === 'ottogolf'
+          ? `https://${course.facilityId}.ottogolf.com/booking/${course.scheduleId}/index.asp`
           : (courseMeta.teeItUpOrigin ?? `https://${course.courseKey}.book.teeitup.com`);
 
         const lines = newSlots.map(slot => {
