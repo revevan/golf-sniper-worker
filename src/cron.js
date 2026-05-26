@@ -41,7 +41,9 @@ export async function runCron(env) {
         allSlots = await fetchTeeItUp(alias, course.date, courseMeta.teeItUpCourseId ?? null, courseMeta.teeItUpOrigin ?? null);
       } else if (course.api === 'foreup') {
         const minP = Math.min(...groupSubs.map(s => s.minPlayers));
-        allSlots = await fetchForeUp(course.facilityId, course.scheduleId, course.date, minP);
+        const uniqueHoles = [...new Set(groupSubs.map(s => s.holes))];
+        const slotArrays = await Promise.all(uniqueHoles.map(h => fetchForeUp(course.facilityId, course.scheduleId, course.date, minP, h)));
+        allSlots = slotArrays.flat();
       } else if (course.api === 'golfnow') {
         const minP = Math.min(...groupSubs.map(s => s.minPlayers));
         const holes = groupSubs[0].holes;

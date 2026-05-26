@@ -1,11 +1,11 @@
 export const COURSES = [
   // Long Beach
-  { name: 'El Dorado Park', region: 'Long Beach', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'el-dorado-park-golf-course' },
-  { name: 'Heartwell Golf Course', region: 'Long Beach', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'heartwell-golf-course' },
+  { name: 'El Dorado Park', region: 'Long Beach', city: 'Long Beach', holes: [18, 9], api: 'teeitup', alias: 'el-dorado-park-golf-course' },
+  { name: 'Heartwell Golf Course', region: 'Long Beach', city: 'Long Beach', holes: [18, 9], api: 'teeitup', alias: 'heartwell-golf-course' },
   // Tee times only available through the multi-course American Golf portal, not the individual subdomain
-  { name: 'Recreation Park (18)', region: 'Long Beach', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'recreation-park-golf-course-18', teeItUpAlias: 'american-golf-long-beach', teeItUpOrigin: 'https://american-golf-long-beach-public.book.teeitup.com', teeItUpCourseId: '54f14bbc0c8ad60378b01579' },
+  { name: 'Recreation Park (18)', region: 'Long Beach', city: 'Long Beach', holes: [18, 9], api: 'teeitup', alias: 'recreation-park-golf-course-18', teeItUpAlias: 'american-golf-long-beach', teeItUpOrigin: 'https://american-golf-long-beach-public.book.teeitup.com', teeItUpCourseId: '54f14bbc0c8ad60378b01579' },
   { name: 'Recreation Park (9)', region: 'Long Beach', city: 'Long Beach', holes: [9], api: 'teeitup', alias: 'recreation-park-golf-course-9' },
-  { name: 'Skylinks at Long Beach', region: 'Long Beach', city: 'Long Beach', holes: [18], api: 'teeitup', alias: 'skylinks-golf-course' },
+  { name: 'Skylinks at Long Beach', region: 'Long Beach', city: 'Long Beach', holes: [18, 9], api: 'teeitup', alias: 'skylinks-golf-course' },
 
   // LA County Parks
   { name: 'Alondra Park', region: 'LA County Parks', city: 'Lawndale', holes: [18], api: 'teeitup', alias: 'alondra-park-golf-course' },

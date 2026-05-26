@@ -8,11 +8,11 @@ function getHHMM(timeStr) {
   return timeStr.includes(' ') ? timeStr.split(' ')[1] : timeStr;
 }
 
-export async function fetchForeUp(facilityId, scheduleId, date, players) {
+export async function fetchForeUp(facilityId, scheduleId, date, players, holes = 18) {
   const url = new URL('https://foreupsoftware.com/index.php/api/booking/times');
   url.searchParams.set('time', 'all');
   url.searchParams.set('date', toForeUpDate(date));
-  url.searchParams.set('holes', '18');
+  url.searchParams.set('holes', String(holes));
   url.searchParams.set('players', players);
   url.searchParams.set('schedule_id', scheduleId);
   url.searchParams.append('schedule_ids[]', scheduleId);
@@ -37,10 +37,11 @@ export async function fetchForeUp(facilityId, scheduleId, date, players) {
     : [];
 }
 
-export function filterForeUp(slots, { earliestTime, latestTime, minPlayers }) {
+export function filterForeUp(slots, { earliestTime, latestTime, minPlayers, holes }) {
   return slots.filter(s =>
     s.time >= earliestTime &&
     s.time <= latestTime &&
-    s.availableSpots >= minPlayers
+    s.availableSpots >= minPlayers &&
+    s.holes === holes
   );
 }
