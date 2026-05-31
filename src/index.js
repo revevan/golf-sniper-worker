@@ -2,6 +2,7 @@ import { COURSES } from './courses.js';
 import { handleTelegramWebhook, sendTelegram } from './telegram.js';
 import { runCron } from './cron.js';
 import { incrementStat } from './stats.js';
+import { encrypt, decrypt } from './crypto.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -9,7 +10,7 @@ function json(data, status = 200) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
@@ -41,7 +42,7 @@ async function handleRequest(req, env) {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' } });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' } });
 
   // GET /courses — course list for the landing page
   if (req.method === 'GET' && path === '/courses') {
@@ -65,7 +66,7 @@ async function handleRequest(req, env) {
   // POST /subscribe — create a new alert
   if (req.method === 'POST' && path === '/subscribe') {
     const body = await req.json();
-    const { linkCode, chatId: providedChatId, courseKey, date, earliestTime, latestTime, minPlayers, holes } = body;
+    const { linkCode, chatId: providedChatId, courseKey, date, earliestTime, latestTime, minPlayers, holes, autoBook } = body;
 
     if (!courseKey || !date || !earliestTime || !latestTime || !minPlayers) {
       return json({ error: 'Missing required fields' }, 400);
@@ -99,6 +100,7 @@ async function handleRequest(req, env) {
       holes: Number(holes ?? course.holes[0]),
       telegramChatId,
       active: true,
+      autoBook: Boolean(autoBook ?? false),
       createdAt: new Date().toISOString(),
     };
 
@@ -118,7 +120,8 @@ async function handleRequest(req, env) {
 
     // Confirm via Telegram
     await sendTelegram(env.TELEGRAM_BOT_TOKEN, telegramChatId,
-      `✅ *Alert set!*\n${course.name} on ${date}\n${earliestTime}–${latestTime} · ${minPlayers}+ players`
+      `✅ *Alert set!*\n${course.name} on ${date}\n${earliestTime}–${latestTime} · ${minPlayers}+ players` +
+      (sub.autoBook ? '\n🤖 Auto-booking enabled' : '')
     );
 
     return json({ id, chatId: telegramChatId, message: 'Alert created' });
@@ -207,6 +210,45 @@ async function handleRequest(req, env) {
     return json({ message: 'Deleted' });
   }
 
+  // PUT /credentials — store encrypted TeeItUp credentials for a user
+  if (req.method === 'PUT' && path === '/credentials') {
+    const body = await req.json();
+    const { chatId: credChatId, username, password } = body;
+    if (!credChatId || !username || !password) {
+      return json({ error: 'chatId, username, and password are required' }, 400);
+    }
+    if (!env.ENCRYPTION_KEY) return json({ error: 'Auto-booking is not configured on this server' }, 503);
+    // Require that this chatId has at least one subscription (proves Telegram ownership)
+    const userRecord = await env.KV.get(`user:${credChatId}`, 'json');
+    if (!userRecord?.length) {
+      return json({ error: 'No active account found for this chatId. Message the bot /start first.' }, 403);
+    }
+    const encrypted = await encrypt(JSON.stringify({ username, password }), env.ENCRYPTION_KEY);
+    await env.KV.put(`creds:${credChatId}`, encrypted);
+    return json({ message: 'Credentials saved' });
+  }
+
+  // GET /credentials?chatId=xxx — check if credentials are stored (returns username, never password)
+  if (req.method === 'GET' && path === '/credentials') {
+    const credChatId = url.searchParams.get('chatId');
+    if (!credChatId) return json({ error: 'chatId required' }, 400);
+    if (!env.ENCRYPTION_KEY) return json({ hasCredentials: false });
+    const encrypted = await env.KV.get(`creds:${credChatId}`);
+    if (!encrypted) return json({ hasCredentials: false });
+    const plaintext = await decrypt(encrypted, env.ENCRYPTION_KEY);
+    if (!plaintext) return json({ hasCredentials: false });
+    const { username } = JSON.parse(plaintext);
+    return json({ hasCredentials: true, username });
+  }
+
+  // DELETE /credentials?chatId=xxx — remove stored credentials
+  if (req.method === 'DELETE' && path === '/credentials') {
+    const credChatId = url.searchParams.get('chatId');
+    if (!credChatId) return json({ error: 'chatId required' }, 400);
+    await env.KV.delete(`creds:${credChatId}`);
+    return json({ message: 'Credentials removed' });
+  }
+
   // GET /admin/stats?secret=xxx — admin dashboard data
   if (req.method === 'GET' && path === '/admin/stats') {
     if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
@@ -216,10 +258,11 @@ async function handleRequest(req, env) {
       listAllKeys(env, 'sub:'),
     ]);
 
-    const [totalSubscriptions, totalAlertsSent, totalSlotMatches] = await Promise.all([
+    const [totalSubscriptions, totalAlertsSent, totalSlotMatches, totalBookings] = await Promise.all([
       env.KV.get('stats:total_subscriptions'),
       env.KV.get('stats:total_alerts_sent'),
       env.KV.get('stats:total_slot_matches'),
+      env.KV.get('stats:total_bookings'),
     ]);
 
     // Fetch active subscription details for breakdown stats
@@ -244,6 +287,7 @@ async function handleRequest(req, env) {
       totalSubscriptions: Number(totalSubscriptions ?? 0),
       totalAlertsSent: Number(totalAlertsSent ?? 0),
       totalSlotMatches: Number(totalSlotMatches ?? 0),
+      totalBookings: Number(totalBookings ?? 0),
       topCourses,
       apiBreakdown: apiCounts,
       generatedAt: new Date().toISOString(),

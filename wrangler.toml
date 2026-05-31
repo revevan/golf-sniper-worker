@@ -4,7 +4,8 @@ compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [triggers]
-crons = ["*/10 * * * *"]
+# every 10 min all day; every 2 min during ~5–8 AM Pacific (UTC 13–16) to catch tee time openings
+crons = ["*/10 * * * *", "*/2 13-16 * * *"]
 
 [[kv_namespaces]]
 binding = "KV"

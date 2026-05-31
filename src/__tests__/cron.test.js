@@ -1,11 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { runCron } from '../cron.js';
 import { sendTelegram } from '../telegram.js';
+import { bookTeeItUp } from '../teeitup.js';
 
 // Hoist vi.mock — Vitest moves this before any imports automatically
 vi.mock('../telegram.js', () => ({
   sendTelegram: vi.fn().mockResolvedValue(undefined),
   handleTelegramWebhook: vi.fn(),
+}));
+
+// Preserve fetchTeeItUp/filterTeeItUp (existing tests rely on them via mocked global fetch),
+// but mock bookTeeItUp so booking tests don't make real HTTP calls
+vi.mock('../teeitup.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, bookTeeItUp: vi.fn().mockResolvedValue({ success: true, bookingId: 'bk-001' }) };
+});
+
+// decrypt is only called when ENCRYPTION_KEY is set; existing tests omit it so loadCreds returns null early
+vi.mock('../crypto.js', () => ({
+  encrypt: vi.fn(),
+  decrypt: vi.fn().mockResolvedValue(JSON.stringify({ username: 'user@example.com', password: 'p@ss' })),
 }));
 
 // ---------------------------------------------------------------------------
@@ -32,8 +46,10 @@ function makeKV(initial = {}) {
   };
 }
 
-function makeEnv(kvData = {}) {
-  return { KV: makeKV(kvData), TELEGRAM_BOT_TOKEN: 'test-token' };
+function makeEnv(kvData = {}, { encryptionKey } = {}) {
+  const env = { KV: makeKV(kvData), TELEGRAM_BOT_TOKEN: 'test-token' };
+  if (encryptionKey) env.ENCRYPTION_KEY = encryptionKey;
+  return env;
 }
 
 // ---------------------------------------------------------------------------
@@ -438,5 +454,128 @@ describe('runCron — stat counters', () => {
 
     const statPuts = env.KV.put.mock.calls.map(c => c[0]).filter(k => k.startsWith('stats:'));
     expect(statPuts).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auto-booking
+// ---------------------------------------------------------------------------
+describe('runCron — auto-booking', () => {
+  beforeEach(() => { bookTeeItUp.mockResolvedValue({ success: true, bookingId: 'bk-001' }); });
+
+  function makeAutoBookEnv(subOverrides = {}) {
+    return makeEnv(
+      {
+        'sub:sub-1': makeSub({ autoBook: true, ...subOverrides }),
+        'creds:999': 'encrypted-blob', // decrypt mock returns valid creds for any input
+      },
+      { encryptionKey: 'test-key' }
+    );
+  }
+
+  it('calls bookTeeItUp when autoBook is true and credentials are stored', async () => {
+    const env = makeAutoBookEnv();
+    mockFetch(teeItUpResponse([{ time: '07:00' }]));
+
+    await runCron(env);
+
+    expect(bookTeeItUp).toHaveBeenCalledOnce();
+  });
+
+  it('sends a "Booked!" Telegram message on successful booking', async () => {
+    const env = makeAutoBookEnv();
+    mockFetch(teeItUpResponse([{ time: '07:00' }]));
+
+    await runCron(env);
+
+    expect(sendTelegram).toHaveBeenCalledOnce();
+    const msg = sendTelegram.mock.calls[0][2];
+    expect(msg).toContain('Booked!');
+    expect(msg).toContain('bk-001');
+    expect(msg).toContain('07:00');
+  });
+
+  it('deactivates the subscription after a successful booking', async () => {
+    const env = makeAutoBookEnv();
+    mockFetch(teeItUpResponse([{ time: '07:00' }]));
+
+    await runCron(env);
+
+    const subPuts = env.KV.put.mock.calls.filter(([k]) => k === 'sub:sub-1');
+    expect(subPuts).toHaveLength(1);
+    expect(JSON.parse(subPuts[0][1]).active).toBe(false);
+  });
+
+  it('increments stats:total_bookings on a successful booking', async () => {
+    const env = makeAutoBookEnv();
+    mockFetch(teeItUpResponse([{ time: '07:00' }]));
+
+    await runCron(env);
+
+    expect(env.KV.put).toHaveBeenCalledWith('stats:total_bookings', '1');
+  });
+
+  it('falls back to a normal alert when booking fails', async () => {
+    bookTeeItUp.mockResolvedValueOnce({ success: false, error: 'Reserve failed: HTTP 409' });
+    const env = makeAutoBookEnv();
+    mockFetch(teeItUpResponse([{ time: '07:00' }]));
+
+    await runCron(env);
+
+    expect(sendTelegram).toHaveBeenCalledOnce();
+    const msg = sendTelegram.mock.calls[0][2];
+    expect(msg).toContain('Tee Times Available');
+    expect(msg).not.toContain('Booked!');
+  });
+
+  it('does not call bookTeeItUp when autoBook is false', async () => {
+    const env = makeEnv(
+      { 'sub:sub-1': makeSub({ autoBook: false }), 'creds:999': 'encrypted-blob' },
+      { encryptionKey: 'test-key' }
+    );
+    mockFetch(teeItUpResponse([{ time: '07:00' }]));
+
+    await runCron(env);
+
+    expect(bookTeeItUp).not.toHaveBeenCalled();
+  });
+
+  it('does not call bookTeeItUp when credentials are not stored', async () => {
+    // No creds key in KV
+    const env = makeEnv({ 'sub:sub-1': makeSub({ autoBook: true }) }, { encryptionKey: 'test-key' });
+    mockFetch(teeItUpResponse([{ time: '07:00' }]));
+
+    await runCron(env);
+
+    expect(bookTeeItUp).not.toHaveBeenCalled();
+    // Falls back to normal alert
+    expect(sendTelegram).toHaveBeenCalledOnce();
+    expect(sendTelegram.mock.calls[0][2]).toContain('Tee Times Available');
+  });
+
+  it('loads credentials only once when two autoBook subs share the same chatId', async () => {
+    const { decrypt } = await import('../crypto.js');
+    decrypt.mockClear();
+
+    const sub1 = makeSub({ id: 'sub-1', autoBook: true, earliestTime: '07:00', latestTime: '08:00' });
+    const sub2 = makeSub({ id: 'sub-2', autoBook: true, earliestTime: '08:00', latestTime: '10:00', date: '2025-11-16' });
+    // Both subs share chatId '999' — credentials should be loaded once per chatId
+    const env = makeEnv(
+      { 'sub:sub-1': sub1, 'sub:sub-2': sub2, 'creds:999': 'encrypted-blob' },
+      { encryptionKey: 'test-key' }
+    );
+
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+      call++;
+      return Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve(teeItUpResponse([{ time: call === 1 ? '07:00' : '08:00' }])),
+      });
+    }));
+
+    await runCron(env);
+
+    expect(decrypt).toHaveBeenCalledOnce();
   });
 });

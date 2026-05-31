@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchTeeItUp, filterTeeItUp } from '../teeitup.js';
+import { fetchTeeItUp, filterTeeItUp, bookTeeItUp } from '../teeitup.js';
 
 // ---------------------------------------------------------------------------
 // filterTeeItUp
@@ -144,5 +144,130 @@ describe('fetchTeeItUp', () => {
     const slots = await fetchTeeItUp('el-dorado', '2025-11-15');
     expect(slots[0].holes).toBe(18);
     expect(slots[0].greenFee).toBe(0);
+  });
+
+  it('includes teeTimeId in returned slot objects (from slot.id)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve([{
+        teetimes: [{ id: 'abc-123', teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0 }] }],
+      }]),
+    }));
+    const slots = await fetchTeeItUp('el-dorado', '2025-11-15');
+    expect(slots[0].teeTimeId).toBe('abc-123');
+  });
+
+  it('teeTimeId is null when no ID field is present in the API response', async () => {
+    mockFetch(200, kennaResponse(WINTER_UTC));
+    const slots = await fetchTeeItUp('el-dorado', '2025-11-15');
+    expect(slots[0].teeTimeId).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// bookTeeItUp
+// ---------------------------------------------------------------------------
+describe('bookTeeItUp', () => {
+  beforeEach(() => { vi.restoreAllMocks(); });
+
+  const params = {
+    alias: 'el-dorado-park-golf-course',
+    origin: 'https://el-dorado-park-golf-course.book.teeitup.com',
+    username: 'user@example.com',
+    password: 'password123',
+    slot: { teeTimeId: 'slot-42', time: '08:00' },
+    players: 2,
+    holes: 18,
+  };
+
+  function mockSequentialFetch(...responses) {
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+      const r = responses[call++] ?? responses[responses.length - 1];
+      return Promise.resolve({
+        ok: r.status >= 200 && r.status < 300,
+        status: r.status,
+        json: () => Promise.resolve(r.body),
+        text: () => Promise.resolve(JSON.stringify(r.body)),
+      });
+    }));
+  }
+
+  it('returns success with bookingId on a full auth → reserve → confirm flow', async () => {
+    mockSequentialFetch(
+      { status: 200, body: { token: 'jwt-token' } },
+      { status: 200, body: { id: 'res-99' } },
+      { status: 200, body: { id: 'book-77' } },
+    );
+    const result = await bookTeeItUp(params);
+    expect(result.success).toBe(true);
+    expect(result.bookingId).toBe('book-77');
+  });
+
+  it('returns failure when auth returns 401', async () => {
+    mockSequentialFetch({ status: 401, body: { error: 'Invalid credentials' } });
+    const result = await bookTeeItUp(params);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Auth failed');
+  });
+
+  it('returns failure when auth response has no token', async () => {
+    mockSequentialFetch({ status: 200, body: { user: 'someone' } });
+    const result = await bookTeeItUp(params);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('missing token');
+  });
+
+  it('returns failure when reserve returns 409 (already taken)', async () => {
+    mockSequentialFetch(
+      { status: 200, body: { token: 'jwt-token' } },
+      { status: 409, body: { error: 'Tee time already booked' } },
+    );
+    const result = await bookTeeItUp(params);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Reserve failed');
+  });
+
+  it('returns failure when reserve response is missing reservation ID', async () => {
+    mockSequentialFetch(
+      { status: 200, body: { token: 'jwt-token' } },
+      { status: 200, body: { status: 'ok' } }, // no id field
+    );
+    const result = await bookTeeItUp(params);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('missing reservation ID');
+  });
+
+  it('returns failure when confirm returns an error', async () => {
+    mockSequentialFetch(
+      { status: 200, body: { token: 'jwt-token' } },
+      { status: 200, body: { id: 'res-99' } },
+      { status: 500, body: { error: 'Server error' } },
+    );
+    const result = await bookTeeItUp(params);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Confirm failed');
+  });
+
+  it('returns failure immediately when slot has no teeTimeId', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const result = await bookTeeItUp({ ...params, slot: { teeTimeId: null, time: '08:00' } });
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('missing teeTimeId');
+    // Should not have made any network calls for a slot without an ID
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('falls back to reservationId when confirm response has no id', async () => {
+    mockSequentialFetch(
+      { status: 200, body: { token: 'jwt-token' } },
+      { status: 200, body: { id: 'res-99' } },
+      { status: 200, body: {} }, // no id in confirm response
+    );
+    const result = await bookTeeItUp(params);
+    expect(result.success).toBe(true);
+    expect(result.bookingId).toBe('res-99');
   });
 });
