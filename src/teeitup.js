@@ -35,14 +35,16 @@ export async function fetchTeeItUp(alias, date, teeItUpCourseId = null, teeItUpO
   const entries = teeItUpCourseId
     ? data.filter(e => e.courseId === teeItUpCourseId)
     : data;
-  return (entries[0]?.teetimes ?? []).map(slot => ({
-    // TODO: confirm the ID field name from actual Kenna API response (likely slot.id)
-    teeTimeId: slot.id ?? slot.teeTimeId ?? null,
-    time: toPacificHHMM(slot.teetime),
-    availableSpots: slot.maxPlayers - slot.bookedPlayers,
-    holes: slot.rates?.[0]?.holes ?? 18,
-    greenFee: Math.round((slot.rates?.[0]?.greenFeeCart ?? 0) / 100),
-  }));
+  return (entries[0]?.teetimes ?? [])
+    .filter(slot => slot.rates?.some(r => r.acceptCreditCard))
+    .map(slot => ({
+      // TODO: confirm the ID field name from actual Kenna API response (likely slot.id)
+      teeTimeId: slot.id ?? slot.teeTimeId ?? null,
+      time: toPacificHHMM(slot.teetime),
+      availableSpots: slot.maxPlayers - slot.bookedPlayers,
+      holes: slot.rates?.[0]?.holes ?? 18,
+      greenFee: Math.round((slot.rates?.[0]?.greenFeeCart ?? 0) / 100),
+    }));
 }
 
 export function filterTeeItUp(slots, { earliestTime, latestTime, minPlayers, holes }) {
