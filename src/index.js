@@ -294,6 +294,22 @@ async function handleRequest(req, env) {
     });
   }
 
+  // GET /admin/teeitup-raw?secret=xxx&alias=xxx&date=YYYY-MM-DD&courseId=xxx
+  // Dumps the raw Kenna API response so we can see what fields blocked tee times have
+  if (req.method === 'GET' && path === '/admin/teeitup-raw') {
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
+    const alias = url.searchParams.get('alias');
+    const date = url.searchParams.get('date');
+    const courseId = url.searchParams.get('courseId');
+    const origin = url.searchParams.get('origin') ?? `https://${alias}.book.teeitup.com`;
+    if (!alias || !date) return json({ error: 'alias and date required' }, 400);
+    const apiUrl = `https://phx-api-be-east-1b.kenna.io/v2/tee-times?date=${date}`;
+    const res = await fetch(apiUrl, { headers: { 'Origin': origin, 'x-be-alias': alias } });
+    const raw = await res.json();
+    const entry = courseId ? raw.find(e => e.courseId === courseId) : raw[0];
+    return json({ courseId, entry });
+  }
+
   return json({ error: 'Not found' }, 404);
 }
 
