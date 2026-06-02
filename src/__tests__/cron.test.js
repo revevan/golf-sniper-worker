@@ -89,7 +89,7 @@ function teeItUpResponse(slots) {
       teetime: UTC[time],
       maxPlayers,
       bookedPlayers,
-      rates: [{ holes, greenFeeCart: 5000, acceptCreditCard: true }],
+      rates: [{ holes, greenFeeCart: 5000 }],
     })),
   }];
 }

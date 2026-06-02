@@ -79,7 +79,7 @@ describe('fetchTeeItUp', () => {
       teetime,
       maxPlayers: 4,
       bookedPlayers: 1,
-      rates: [{ holes: 18, greenFeeCart: 5000, acceptCreditCard: true }],
+      rates: [{ holes: 18, greenFeeCart: 5000 }],
       ...extraProps,
     }],
   }]);
@@ -125,40 +125,12 @@ describe('fetchTeeItUp', () => {
       ok: true,
       status: 200,
       json: () => Promise.resolve([
-        { courseId: 'A', teetimes: [{ teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0, acceptCreditCard: true }] }] },
-        { courseId: 'B', teetimes: [{ teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0, acceptCreditCard: true }] }] },
+        { courseId: 'A', teetimes: [{ teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0 }] }] },
+        { courseId: 'B', teetimes: [{ teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0 }] }] },
       ]),
     }));
     const slots = await fetchTeeItUp('portal', '2025-11-15', 'A');
     expect(slots).toHaveLength(1);
-  });
-
-  it('excludes walk-in-only slots (acceptCreditCard false on all rates)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve([{
-        teetimes: [
-          { teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0, acceptCreditCard: false }] },
-          { teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 3000, acceptCreditCard: true }] },
-        ],
-      }]),
-    }));
-    const slots = await fetchTeeItUp('el-dorado', '2025-11-15');
-    expect(slots).toHaveLength(1);
-    expect(slots[0].greenFee).toBe(30);
-  });
-
-  it('excludes slots with missing/empty rates (walk-in with no rate info)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve([{
-        teetimes: [{ teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [] }],
-      }]),
-    }));
-    const slots = await fetchTeeItUp('el-dorado', '2025-11-15');
-    expect(slots).toHaveLength(0);
   });
 
   it('includes teeTimeId in returned slot objects (from slot.id)', async () => {
@@ -166,7 +138,7 @@ describe('fetchTeeItUp', () => {
       ok: true,
       status: 200,
       json: () => Promise.resolve([{
-        teetimes: [{ id: 'abc-123', teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0, acceptCreditCard: true }] }],
+        teetimes: [{ id: 'abc-123', teetime: WINTER_UTC, maxPlayers: 4, bookedPlayers: 0, rates: [{ holes: 18, greenFeeCart: 0 }] }],
       }]),
     }));
     const slots = await fetchTeeItUp('el-dorado', '2025-11-15');
@@ -174,7 +146,6 @@ describe('fetchTeeItUp', () => {
   });
 
   it('teeTimeId is null when no ID field is present in the API response', async () => {
-    // kennaResponse includes acceptCreditCard: true so the slot passes the walk-in filter
     mockFetch(200, kennaResponse(WINTER_UTC));
     const slots = await fetchTeeItUp('el-dorado', '2025-11-15');
     expect(slots[0].teeTimeId).toBeNull();
