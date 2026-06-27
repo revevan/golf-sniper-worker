@@ -36,7 +36,7 @@ function confirmPage(title, message, success) {
     <div style="font-size:3rem;margin-bottom:16px">${icon}</div>
     <h1 style="margin:0 0 12px;font-size:1.4rem;color:${color}">${title}</h1>
     <p style="margin:0 0 28px;color:#555;font-size:0.95rem;line-height:1.6">${message}</p>
-    <a href="https://revevan.github.io/golf-sniper-worker" style="display:inline-block;background:#4caf50;color:white;text-decoration:none;padding:12px 28px;border-radius:9px;font-weight:700">
+    <a href="https://golf-sniper.evanwkennedy.workers.dev" style="display:inline-block;background:#4caf50;color:white;text-decoration:none;padding:12px 28px;border-radius:9px;font-weight:700">
       Back to Golf Sniper
     </a>
   </div>
