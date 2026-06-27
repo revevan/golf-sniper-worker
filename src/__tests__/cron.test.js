@@ -33,7 +33,7 @@ function makeKV(initial = {}) {
 }
 
 function makeEnv(kvData = {}) {
-  return { KV: makeKV(kvData), TELEGRAM_BOT_TOKEN: 'test-token' };
+  return { KV: makeKV(kvData), HISTORY: makeKV({}), TELEGRAM_BOT_TOKEN: 'test-token' };
 }
 
 // ---------------------------------------------------------------------------
