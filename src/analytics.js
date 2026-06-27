@@ -1,18 +1,44 @@
 export async function logSlotSnapshot(historyKV, courseKey, date, slots, timestamp = new Date()) {
+  if (slots.length === 0) return;
+
   const ts = timestamp.toISOString();
+  const stateKey = `state:${courseKey}:${date}`;
+
+  // One read to get the last-recorded availableSpots for each slot
+  const lastState = (await historyKV.get(stateKey, 'json')) ?? {};
+
+  // History keys expire 90 days after the tee date for long-term analytics
+  const historyExpiry = new Date(date + 'T12:00:00Z');
+  historyExpiry.setDate(historyExpiry.getDate() + 90);
+  const historyTtl = Math.max(60, Math.floor((historyExpiry - Date.now()) / 1000));
+
   const promises = [];
+  const newState = { ...lastState };
+  let stateChanged = false;
 
   for (const slot of slots) {
+    if (lastState[slot.time] === slot.availableSpots) continue;
+
     const key = `history:${courseKey}:${date}:${slot.time}:${ts}`;
-    const value = {
+    promises.push(historyKV.put(key, JSON.stringify({
       courseKey,
       date,
       time: slot.time,
       availableSpots: slot.availableSpots,
       greenFee: slot.greenFee ?? null,
       timestamp: ts,
-    };
-    promises.push(historyKV.put(key, JSON.stringify(value)));
+    }), { expirationTtl: historyTtl }));
+
+    newState[slot.time] = slot.availableSpots;
+    stateChanged = true;
+  }
+
+  if (stateChanged) {
+    // Expire state 2 days after the tee date
+    const expiry = new Date(date + 'T12:00:00Z');
+    expiry.setDate(expiry.getDate() + 2);
+    const stateTtl = Math.max(60, Math.floor((expiry - Date.now()) / 1000));
+    promises.push(historyKV.put(stateKey, JSON.stringify(newState), { expirationTtl: stateTtl }));
   }
 
   if (promises.length > 0) {
