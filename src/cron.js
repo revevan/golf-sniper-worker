@@ -5,6 +5,7 @@ import { fetchGolfNow, filterGolfNow } from './golfnow.js';
 import { fetchOttoGolf, filterOttoGolf } from './ottogolf.js';
 import { sendTelegram } from './telegram.js';
 import { incrementStat } from './stats.js';
+import { logSlotSnapshot } from './analytics.js';
 
 export async function runCron(env) {
   console.log(`Cron running — ${new Date().toISOString()}`);
@@ -53,6 +54,9 @@ export async function runCron(env) {
       }
 
       console.log(`${course.courseKey ?? course.facilityId} on ${course.date}: ${allSlots.length} raw slot(s) from API`);
+
+      // Log slot snapshot to history for pattern analysis
+      await logSlotSnapshot(env.HISTORY, course.courseKey ?? course.facilityId, course.date, allSlots);
 
       for (const sub of groupSubs) {
         summary.subsChecked++;

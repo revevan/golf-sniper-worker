@@ -2,6 +2,7 @@ import { COURSES } from './courses.js';
 import { handleTelegramWebhook, sendTelegram } from './telegram.js';
 import { runCron } from './cron.js';
 import { incrementStat } from './stats.js';
+import { getBookOutTimeline, getCoursePatterns, getMidnightDumps } from './analytics.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -248,6 +249,46 @@ async function handleRequest(req, env) {
       apiBreakdown: apiCounts,
       generatedAt: new Date().toISOString(),
     });
+  }
+
+  // GET /analytics/course/:courseKey?secret=xxx — patterns for a specific course
+  if (req.method === 'GET' && /^\/analytics\/course\/[^/]+$/.test(path)) {
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
+
+    const courseKey = path.split('/')[3];
+    const patterns = await getCoursePatterns(env.HISTORY, courseKey);
+    return json(patterns);
+  }
+
+  // GET /analytics/course/:courseKey/date/:date?secret=xxx — timeline for specific date
+  if (req.method === 'GET' && /^\/analytics\/course\/[^/]+\/date\/\d{4}-\d{2}-\d{2}$/.test(path)) {
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
+
+    const parts = path.split('/');
+    const courseKey = parts[3];
+    const date = parts[5];
+
+    const timeline = await getBookOutTimeline(env.HISTORY, courseKey, date);
+    return json({
+      courseKey,
+      date,
+      slots: Object.values(timeline).sort((a, b) => a.minutesToBookOut - b.minutesToBookOut),
+    });
+  }
+
+  // GET /analytics/midnight-dumps?secret=xxx&days=7 — detect unusual activity patterns
+  if (req.method === 'GET' && path === '/analytics/midnight-dumps') {
+    if (!isAdminAuthorized(req, env)) return json({ error: 'Unauthorized' }, 401);
+
+    const days = Number(url.searchParams.get('days') ?? 7);
+    const courseKey = url.searchParams.get('course');
+
+    if (!courseKey) {
+      return json({ error: 'course parameter required' }, 400);
+    }
+
+    const dumps = await getMidnightDumps(env.HISTORY, courseKey, days);
+    return json(dumps);
   }
 
   return json({ error: 'Not found' }, 404);
