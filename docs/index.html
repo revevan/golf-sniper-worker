@@ -198,6 +198,9 @@
   <div class="card" id="alertCard" style="display:none">
     <div class="card-title">Step 2 — Set Up Your Alert</div>
 
+    <label>Region</label>
+    <select id="regionSelect"></select>
+
     <label>Course</label>
     <select id="courseSelect"></select>
 
@@ -251,43 +254,49 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), ms);
   }
 
+  const REGION_ORDER = ['Long Beach', 'LA City', 'LA County', 'Orange County', 'Ventura County', 'Inland Empire', 'Atlanta'];
+  let coursesByRegion = {};
+
   async function loadCourses() {
     const res = await fetch(`${API}/courses`);
     const courses = await res.json();
 
-    const select = document.getElementById('courseSelect');
-    const regionOrder = ['Long Beach', 'LA County Parks', 'City of LA', 'Ventura County', 'Orange County'];
-    const groups = {};
     for (const c of courses) {
       const key = c.region ?? c.city;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(c);
-    }
-    const orderedKeys = [...regionOrder.filter(r => groups[r]), ...Object.keys(groups).filter(k => !regionOrder.includes(k))];
-    for (const key of orderedKeys) {
-      const og = document.createElement('optgroup');
-      og.label = key;
-      for (const c of groups[key]) {
-        const opt = document.createElement('option');
-        opt.value = c.alias ?? c.facilityId;
-        opt.textContent = c.name;
-        opt.dataset.holes = JSON.stringify(c.holes);
-        opt.dataset.api = c.api;
-        og.appendChild(opt);
-      }
-      select.appendChild(og);
+      if (!coursesByRegion[key]) coursesByRegion[key] = [];
+      coursesByRegion[key].push(c);
     }
 
-    select.addEventListener('change', updateHolesOptions);
+    const orderedKeys = [...REGION_ORDER.filter(r => coursesByRegion[r]), ...Object.keys(coursesByRegion).filter(k => !REGION_ORDER.includes(k))];
+
+    const regionSelect = document.getElementById('regionSelect');
+    for (const key of orderedKeys) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = key;
+      regionSelect.appendChild(opt);
+    }
+
+    regionSelect.addEventListener('change', updateCourseOptions);
+    document.getElementById('courseSelect').addEventListener('change', updateHolesOptions);
+
+    updateCourseOptions();
+  }
+
+  function updateCourseOptions() {
+    const region = document.getElementById('regionSelect').value;
+    const courses = coursesByRegion[region] ?? [];
+    const courseSelect = document.getElementById('courseSelect');
+    courseSelect.innerHTML = courses.map(c =>
+      `<option value="${c.alias ?? c.facilityId}" data-holes='${JSON.stringify(c.holes)}'>${c.name}</option>`
+    ).join('');
     updateHolesOptions();
   }
 
   function updateHolesOptions() {
-    const select = document.getElementById('courseSelect');
-    const opt = select.selectedOptions[0];
+    const opt = document.getElementById('courseSelect').selectedOptions[0];
     const holes = JSON.parse(opt?.dataset.holes ?? '[18]');
-    const holesSelect = document.getElementById('holesSelect');
-    holesSelect.innerHTML = holes.map(h => `<option value="${h}">${h} holes</option>`).join('');
+    document.getElementById('holesSelect').innerHTML = holes.map(h => `<option value="${h}">${h} holes</option>`).join('');
   }
 
   // Set min date to tomorrow
@@ -425,7 +434,7 @@
   async function init() {
     await loadCourses();
     initDatePicker();
-    if (chatId) {
+    if (chatId || new URLSearchParams(location.search).has('preview')) {
       showAlertStep();
     }
   }
