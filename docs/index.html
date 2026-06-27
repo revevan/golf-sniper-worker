@@ -339,17 +339,15 @@
     <!-- Notification method toggle -->
     <div class="card" id="notifToggleCard">
       <div class="card-title">How should we notify you?</div>
-      <div style="display:flex;gap:10px">
-        <label style="flex:1;margin:0">
-          <input type="radio" name="notifMethod" value="email" checked onchange="setNotifMethod('email')"
-            style="width:auto;margin-right:6px">
+      <div style="display:flex;gap:8px">
+        <button id="toggleEmail" onclick="setNotifMethod('email')"
+          style="flex:1;padding:12px 8px;border-radius:9px;border:2px solid #4caf50;background:#4caf50;color:white;font-size:0.92rem;font-weight:700;cursor:pointer;transition:all 0.15s">
           📧 Email
-        </label>
-        <label style="flex:1;margin:0">
-          <input type="radio" name="notifMethod" value="telegram" onchange="setNotifMethod('telegram')"
-            style="width:auto;margin-right:6px">
+        </button>
+        <button id="toggleTelegram" onclick="setNotifMethod('telegram')"
+          style="flex:1;padding:12px 8px;border-radius:9px;border:2px solid #e0e0e0;background:white;color:#888;font-size:0.92rem;font-weight:700;cursor:pointer;transition:all 0.15s">
           ✈️ Telegram
-        </label>
+        </button>
       </div>
     </div>
 
@@ -636,6 +634,23 @@
 
   function setNotifMethod(method) {
     notifMethod = method;
+    const emailBtn = document.getElementById('toggleEmail');
+    const telegramBtn = document.getElementById('toggleTelegram');
+    if (method === 'email') {
+      emailBtn.style.background = '#4caf50';
+      emailBtn.style.color = 'white';
+      emailBtn.style.borderColor = '#4caf50';
+      telegramBtn.style.background = 'white';
+      telegramBtn.style.color = '#888';
+      telegramBtn.style.borderColor = '#e0e0e0';
+    } else {
+      telegramBtn.style.background = '#4caf50';
+      telegramBtn.style.color = 'white';
+      telegramBtn.style.borderColor = '#4caf50';
+      emailBtn.style.background = 'white';
+      emailBtn.style.color = '#888';
+      emailBtn.style.borderColor = '#e0e0e0';
+    }
     document.getElementById('emailInputCard').style.display = method === 'email' ? 'block' : 'none';
     if (method === 'telegram') {
       document.getElementById('linkCard').style.display = chatId ? 'none' : 'block';
