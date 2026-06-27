@@ -52,6 +52,10 @@ export const COURSES = [
   { name: 'Rancho San Joaquin', region: 'Orange County', city: 'Irvine', holes: [18], api: 'teeitup', alias: 'rancho-san-joaquin-golf-club' },
   { name: 'River View Golf Course', region: 'Orange County', city: 'Santa Ana', holes: [18], api: 'teeitup', alias: 'river-view-golf-club' },
   { name: 'San Clemente Municipal Golf Course', region: 'Orange County', city: 'San Clemente', holes: [18], api: 'foreup', facilityId: '18754', scheduleId: '413' },
+  { name: 'Tustin Ranch Golf Club', region: 'Orange County', city: 'Tustin', holes: [18], api: 'teeitup', alias: 'tustin-ranch-golf-club' },
+
+  // LA County (Adjacent to OC)
+  { name: 'Los Amigos Golf Course', region: 'LA County', city: 'Downey', holes: [18], api: 'teeitup', alias: 'los-amigos-golf-course' },
 
   // Inland Empire
   { name: 'Goose Creek Golf Club', region: 'Inland Empire', city: 'Mira Loma', holes: [18], api: 'ottogolf', facilityId: 'goosecreek', scheduleId: '3', alias: 'goose-creek' },
