@@ -3,6 +3,10 @@ import { handleTelegramWebhook, sendTelegram } from './telegram.js';
 import { runCron } from './cron.js';
 import { incrementStat } from './stats.js';
 import { getBookOutTimeline, getCoursePatterns, getMidnightDumps } from './analytics.js';
+import { fetchGolfNow } from './golfnow.js';
+import { fetchTeeItUp } from './teeitup.js';
+import { fetchForeUp } from './foreup.js';
+import { fetchOttoGolf } from './ottogolf.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -289,6 +293,69 @@ async function handleRequest(req, env) {
 
     const dumps = await getMidnightDumps(env.HISTORY, courseKey, days);
     return json(dumps);
+  }
+
+  // GET /search?region=...&date=...&earliest=...&latest=...&players=...&holes=...
+  if (req.method === 'GET' && path === '/search') {
+    const region = url.searchParams.get('region');
+    const date = url.searchParams.get('date');
+    const earliest = url.searchParams.get('earliest') ?? '06:00';
+    const latest = url.searchParams.get('latest') ?? '18:00';
+    const players = Number(url.searchParams.get('players') ?? 2);
+    const holes = Number(url.searchParams.get('holes') ?? 18);
+
+    if (!region || !date) return json({ error: 'region and date required' }, 400);
+
+    const coursesInRegion = COURSES.filter(c => c.region === region);
+    const withTimeout = (p, ms = 10000) => Promise.race([
+      p,
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+    ]);
+
+    const items = await Promise.all(coursesInRegion.map(async course => {
+      const courseKey = course.alias ?? String(course.facilityId);
+      const bookingUrl = course.api === 'foreup'
+        ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
+        : course.api === 'golfnow'
+        ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search`
+        : course.api === 'ottogolf'
+        ? `https://${course.facilityId}.ottogolf.com/booking/${course.scheduleId}/index.asp`
+        : (course.teeItUpOrigin ?? `https://${courseKey}.book.teeitup.com`);
+
+      try {
+        let raw = [];
+        if (course.api === 'teeitup') {
+          const alias = course.teeItUpAlias ?? courseKey;
+          raw = await withTimeout(fetchTeeItUp(alias, date, course.teeItUpCourseId ?? null, course.teeItUpOrigin ?? null));
+          raw = raw.filter(s => s.holes === holes && s.availableSpots >= players);
+        } else if (course.api === 'golfnow') {
+          raw = await withTimeout(fetchGolfNow(course.facilityId, date, players, holes));
+        } else if (course.api === 'foreup') {
+          raw = await withTimeout(fetchForeUp(course.facilityId, course.scheduleId, date, players, holes));
+        } else if (course.api === 'ottogolf') {
+          raw = await withTimeout(fetchOttoGolf(course.facilityId, course.scheduleId, date));
+          raw = raw.filter(s => s.availableSpots >= players);
+        }
+
+        const matching = raw.filter(s => s.time >= earliest && s.time <= latest);
+        return {
+          name: course.name,
+          courseKey,
+          bookingUrl,
+          slots: matching.map(s => ({ time: s.time, players: s.availableSpots, fee: s.greenFee ?? null })),
+        };
+      } catch {
+        return { name: course.name, courseKey, bookingUrl, slots: [], error: true };
+      }
+    }));
+
+    return json({
+      region,
+      date,
+      results: items.filter(i => i.slots.length > 0),
+      empty: items.filter(i => i.slots.length === 0 && !i.error),
+      errors: items.filter(i => i.error).map(i => i.name),
+    });
   }
 
   return json({ error: 'Not found' }, 404);
