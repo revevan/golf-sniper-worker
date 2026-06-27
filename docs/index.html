@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>⛳ Golf Tee Time Sniper</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛳</text></svg>">
-  <meta name="description" content="Get Telegram alerts the moment tee times open up at public golf courses. Free, no sign-up required.">
+  <meta name="description" content="Search tee times across 60+ public golf courses and get Telegram alerts the moment a slot opens.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://revevan.github.io/golf-sniper-worker">
   <meta property="og:title" content="Golf Tee Time Sniper">
-  <meta property="og:description" content="Get Telegram alerts the moment tee times open up at public golf courses. Free, no sign-up required.">
+  <meta property="og:description" content="Search tee times across 60+ public golf courses and get Telegram alerts the moment a slot opens.">
   <meta property="og:image" content="https://revevan.github.io/golf-sniper-worker/og-image.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -86,6 +86,20 @@
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-green { background: #4caf50; color: white; }
     .btn-gray { background: #eee; color: #444; }
+    .btn-outline {
+      background: none;
+      border: 1.5px solid #4caf50;
+      color: #4caf50;
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 9px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.15s;
+    }
+    .btn-outline:hover { background: #f1f8f1; }
     .step {
       display: flex;
       gap: 12px;
@@ -108,6 +122,91 @@
       flex-shrink: 0;
       margin-top: 1px;
     }
+    /* Results */
+    .result-name {
+      font-weight: 700;
+      font-size: 0.98rem;
+      margin-bottom: 10px;
+    }
+    .slot-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.88rem;
+    }
+    .slot-row:last-of-type { border-bottom: none; }
+    .slot-time { font-weight: 600; min-width: 74px; }
+    .slot-meta { color: #777; flex: 1; }
+    .slot-fee { color: #2e7d32; font-weight: 600; min-width: 36px; text-align: right; }
+    .book-link {
+      background: #4caf50;
+      color: white;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .book-link:hover { opacity: 0.85; }
+    .section-divider {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #bbb;
+      margin: 20px 0 12px;
+    }
+    .card-empty {
+      background: #f7f7f7;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .card-empty-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #888;
+    }
+    .btn-alert-sm {
+      flex-shrink: 0;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .btn-alert-sm:hover { opacity: 0.85; }
+    .back-link {
+      display: inline-block;
+      color: #4caf50;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 12px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+    .search-meta {
+      font-size: 0.82rem;
+      color: #888;
+      margin-bottom: 14px;
+    }
+    /* Active alerts */
     .alert-row {
       padding: 12px 0;
       border-bottom: 1px solid #f0f0f0;
@@ -127,7 +226,6 @@
       padding: 0;
     }
     .empty { color: #aaa; font-size: 0.85rem; }
-    .optgroup-label { font-weight: 700; }
     .toast {
       position: fixed;
       bottom: 24px;
@@ -154,6 +252,7 @@
       font-size: 0.88rem;
       color: #2e7d32;
       display: none;
+      margin-bottom: 16px;
     }
     code {
       background: #f5f5f5;
@@ -162,67 +261,132 @@
       font-family: monospace;
       font-size: 0.9em;
     }
+    .no-results-card {
+      text-align: center;
+      padding: 24px 18px;
+    }
+    .no-results-card .icon { font-size: 2rem; margin-bottom: 8px; }
+    .no-results-card p { font-size: 0.88rem; color: #666; margin-bottom: 4px; }
+    .no-results-card p strong { color: #222; }
+    .divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 16px 0;
+    }
   </style>
 </head>
 <body>
 
 <header>
   <h1>⛳ Golf Tee Time Sniper</h1>
-  <p>Get a Telegram alert the moment a tee time opens up</p>
+  <p>Search tee times or get a Telegram alert the moment one opens up</p>
 </header>
 
 <main>
 
-  <!-- Step 1: Link Telegram -->
-  <div class="card" id="linkCard">
-    <div class="card-title">Step 1 — Link Your Telegram</div>
-    <div class="step">
-      <div class="step-num">1</div>
-      <div>Open Telegram and message <a href="http://t.me/golfteetimesniperbot" target="_blank"><strong>@golfteetimesniperbot</strong></a></div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div>Send the message: <code>/start</code></div>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div>The bot will reply with a 6-character code. Enter it below.</div>
-    </div>
-    <label>Link Code</label>
-    <input type="text" id="linkCode" placeholder="e.g. GOLF42" maxlength="6" autocomplete="off"
-      oninput="this.value = this.value.toUpperCase()">
-    <button class="btn btn-green" onclick="verifyCode()">Continue →</button>
-  </div>
-
-  <!-- Step 2: Set up alert (hidden until code verified) -->
-  <div class="card" id="alertCard" style="display:none">
-    <div class="card-title">Step 2 — Set Up Your Alert</div>
+  <!-- Search -->
+  <div class="card" id="searchCard">
+    <div class="card-title">Search Tee Times</div>
 
     <label>Region</label>
-    <select id="regionSelect"></select>
-
-    <label>Course</label>
-    <select id="courseSelect"></select>
+    <select id="searchRegion"></select>
 
     <label>Date</label>
-    <input type="date" id="alertDate">
+    <input type="date" id="searchDate">
 
     <label>Time Window</label>
     <div class="row">
-      <input type="time" id="earliestTime" value="07:00">
-      <input type="time" id="latestTime" value="10:00">
+      <input type="time" id="searchEarliest" value="07:00">
+      <input type="time" id="searchLatest" value="10:00">
     </div>
 
-    <label>Min Players Available</label>
-    <input type="number" id="minPlayers" min="1" max="4" value="2" style="max-width:80px">
+    <div class="row" style="margin-top:14px">
+      <div>
+        <label style="margin-top:0">Players</label>
+        <input type="number" id="searchPlayers" min="1" max="4" value="2">
+      </div>
+      <div>
+        <label style="margin-top:0">Holes</label>
+        <select id="searchHoles">
+          <option value="18">18 holes</option>
+          <option value="9">9 holes</option>
+        </select>
+      </div>
+    </div>
 
-    <label>Holes</label>
-    <select id="holesSelect">
-      <option value="18">18 holes</option>
-      <option value="9">9 holes</option>
-    </select>
+    <button class="btn btn-green" id="searchBtn" onclick="runSearch()">🔍 Search Tee Times</button>
+    <button class="btn-outline" onclick="goToAlert(null)">🔔 Set an Alert Instead</button>
+  </div>
 
-    <button class="btn btn-green" id="subscribeBtn" onclick="subscribe()">🔔 Set Alert</button>
+  <!-- Loading -->
+  <div class="card" id="loadingCard" style="display:none; text-align:center; padding: 32px 18px;">
+    <div style="font-size:1.8rem; margin-bottom:10px;">🔍</div>
+    <div style="font-weight:600; margin-bottom:4px;">Searching tee times…</div>
+    <div style="font-size:0.82rem; color:#888" id="loadingRegion"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" style="display:none">
+    <button class="back-link" onclick="showSection('searchCard')">← New Search</button>
+    <div class="search-meta" id="searchSummary"></div>
+    <div id="resultsList"></div>
+  </div>
+
+  <!-- Alert Setup -->
+  <div id="alertSection" style="display:none">
+    <button class="back-link" onclick="backFromAlert()">← Back to Search</button>
+
+    <!-- Step 1: Link Telegram (hidden if already linked) -->
+    <div class="card" id="linkCard">
+      <div class="card-title">Step 1 — Link Your Telegram</div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>Open Telegram and message <a href="http://t.me/golfteetimesniperbot" target="_blank"><strong>@golfteetimesniperbot</strong></a></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>Send the message: <code>/start</code></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>The bot will reply with a 6-character code. Enter it below.</div>
+      </div>
+      <label>Link Code</label>
+      <input type="text" id="linkCode" placeholder="e.g. GOLF42" maxlength="6" autocomplete="off"
+        oninput="this.value = this.value.toUpperCase()">
+      <button class="btn btn-green" onclick="verifyCode()">Continue →</button>
+    </div>
+
+    <!-- Step 2: Alert form -->
+    <div class="card" id="alertCard" style="display:none">
+      <div class="card-title">Set Up Alert</div>
+
+      <label>Region</label>
+      <select id="regionSelect"></select>
+
+      <label>Course</label>
+      <select id="courseSelect"></select>
+
+      <label>Date</label>
+      <input type="date" id="alertDate">
+
+      <label>Time Window</label>
+      <div class="row">
+        <input type="time" id="earliestTime" value="07:00">
+        <input type="time" id="latestTime" value="10:00">
+      </div>
+
+      <label>Min Players Available</label>
+      <input type="number" id="minPlayers" min="1" max="4" value="2" style="max-width:80px">
+
+      <label>Holes</label>
+      <select id="holesSelect">
+        <option value="18">18 holes</option>
+        <option value="9">9 holes</option>
+      </select>
+
+      <button class="btn btn-green" id="subscribeBtn" onclick="subscribe()">🔔 Set Alert</button>
+    </div>
   </div>
 
   <!-- Success -->
@@ -242,8 +406,15 @@
 
 <script>
   const API = 'https://golf-sniper.evanwkennedy.workers.dev';
+  const REGION_ORDER = ['Long Beach', 'LA City', 'LA County', 'Orange County', 'Ventura County', 'Inland Empire', 'Atlanta'];
+
   let chatId = localStorage.getItem('golf_chat_id');
   let verifiedCode = localStorage.getItem('golf_link_code');
+  let coursesByRegion = {};
+  let lastSearch = null;
+  let pendingCourseKey = null;
+
+  // ── Utilities ────────────────────────────────────────────────
 
   let toastTimer;
   function toast(msg, ms = 3000) {
@@ -254,8 +425,36 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), ms);
   }
 
-  const REGION_ORDER = ['Long Beach', 'LA City', 'LA County', 'Orange County', 'Ventura County', 'Inland Empire', 'Atlanta'];
-  let coursesByRegion = {};
+  function formatTime(hhmm) {
+    const [h, m] = hhmm.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  }
+
+  function formatDate(dateStr) {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric'
+    });
+  }
+
+  // ── Section visibility ────────────────────────────────────────
+
+  function showSection(id) {
+    ['searchCard', 'loadingCard', 'resultsSection', 'alertSection'].forEach(s => {
+      document.getElementById(s).style.display = s === id ? 'block' : 'none';
+    });
+  }
+
+  function backFromAlert() {
+    if (lastSearch) {
+      showSection('resultsSection');
+    } else {
+      showSection('searchCard');
+    }
+  }
+
+  // ── Course data ───────────────────────────────────────────────
 
   async function loadCourses() {
     const res = await fetch(`${API}/courses`);
@@ -267,19 +466,31 @@
       coursesByRegion[key].push(c);
     }
 
-    const orderedKeys = [...REGION_ORDER.filter(r => coursesByRegion[r]), ...Object.keys(coursesByRegion).filter(k => !REGION_ORDER.includes(k))];
+    const orderedKeys = [
+      ...REGION_ORDER.filter(r => coursesByRegion[r]),
+      ...Object.keys(coursesByRegion).filter(k => !REGION_ORDER.includes(k)),
+    ];
 
-    const regionSelect = document.getElementById('regionSelect');
+    // Populate search region dropdown
+    const searchRegion = document.getElementById('searchRegion');
     for (const key of orderedKeys) {
       const opt = document.createElement('option');
       opt.value = key;
       opt.textContent = key;
-      regionSelect.appendChild(opt);
+      searchRegion.appendChild(opt);
     }
 
-    regionSelect.addEventListener('change', updateCourseOptions);
-    document.getElementById('courseSelect').addEventListener('change', updateHolesOptions);
+    // Populate alert region dropdown
+    const alertRegion = document.getElementById('regionSelect');
+    for (const key of orderedKeys) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = key;
+      alertRegion.appendChild(opt);
+    }
 
+    alertRegion.addEventListener('change', updateCourseOptions);
+    document.getElementById('courseSelect').addEventListener('change', updateHolesOptions);
     updateCourseOptions();
   }
 
@@ -296,16 +507,142 @@
   function updateHolesOptions() {
     const opt = document.getElementById('courseSelect').selectedOptions[0];
     const holes = JSON.parse(opt?.dataset.holes ?? '[18]');
-    document.getElementById('holesSelect').innerHTML = holes.map(h => `<option value="${h}">${h} holes</option>`).join('');
+    document.getElementById('holesSelect').innerHTML =
+      holes.map(h => `<option value="${h}">${h} holes</option>`).join('');
   }
 
-  // Set min date to tomorrow
+  // ── Date setup ────────────────────────────────────────────────
+
   function initDatePicker() {
-    const input = document.getElementById('alertDate');
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    input.min = tomorrow.toISOString().split('T')[0];
-    input.value = tomorrow.toISOString().split('T')[0];
+    const val = tomorrow.toISOString().split('T')[0];
+
+    ['searchDate', 'alertDate'].forEach(id => {
+      const input = document.getElementById(id);
+      input.min = val;
+      input.value = val;
+    });
+  }
+
+  // ── Search ────────────────────────────────────────────────────
+
+  async function runSearch() {
+    const region = document.getElementById('searchRegion').value;
+    const date = document.getElementById('searchDate').value;
+    const earliest = document.getElementById('searchEarliest').value;
+    const latest = document.getElementById('searchLatest').value;
+    const players = document.getElementById('searchPlayers').value;
+    const holes = document.getElementById('searchHoles').value;
+
+    if (!date) { toast('Pick a date'); return; }
+    if (earliest >= latest) { toast('End time must be after start time'); return; }
+
+    lastSearch = { region, date, earliest, latest, players, holes };
+
+    document.getElementById('loadingRegion').textContent =
+      `${region} · ${formatDate(date)} · ${formatTime(earliest)}–${formatTime(latest)}`;
+    showSection('loadingCard');
+
+    try {
+      const params = new URLSearchParams({ region, date, earliest, latest, players, holes });
+      const res = await fetch(`${API}/search?${params}`);
+      const data = await res.json();
+      renderResults(data);
+    } catch {
+      toast('❌ Network error — try again');
+      showSection('searchCard');
+    }
+  }
+
+  function renderResults(data) {
+    const { results, empty, region, date } = data;
+    const { earliest, latest, players } = lastSearch;
+
+    document.getElementById('searchSummary').textContent =
+      `${region} · ${formatDate(date)} · ${formatTime(earliest)}–${formatTime(latest)} · ${players}+ players`;
+
+    const container = document.getElementById('resultsList');
+    let html = '';
+
+    if (results.length === 0 && empty.length === 0) {
+      html = `
+        <div class="card no-results-card">
+          <div class="icon">🕳️</div>
+          <p><strong>No tee times available</strong></p>
+          <p>Nothing matched your search in ${region} on ${formatDate(date)}.</p>
+          <button class="btn btn-green" style="margin-top:14px" onclick="goToAlert(null)">🔔 Set an Alert Instead</button>
+        </div>`;
+    } else {
+      // Courses with availability
+      html += results.map(r => `
+        <div class="card">
+          <div class="result-name">${r.name}</div>
+          ${r.slots.map(s => `
+            <div class="slot-row">
+              <span class="slot-time">${formatTime(s.time)}</span>
+              <span class="slot-meta">${s.players} spots</span>
+              <span class="slot-fee">${s.fee ? '$' + s.fee : ''}</span>
+              <a class="book-link" href="${r.bookingUrl}" target="_blank" rel="noopener">Book →</a>
+            </div>
+          `).join('')}
+          <button class="btn-outline" onclick="goToAlert('${r.courseKey}')">🔔 Alert this course</button>
+        </div>
+      `).join('');
+
+      // Courses with no availability
+      if (empty.length > 0) {
+        html += `<div class="section-divider">No availability found</div>`;
+        html += empty.map(e => `
+          <div class="card-empty">
+            <span class="card-empty-name">${e.name}</span>
+            <button class="btn-alert-sm" onclick="goToAlert('${e.courseKey}')">🔔 Set Alert</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    container.innerHTML = html;
+    showSection('resultsSection');
+  }
+
+  // ── Alert flow ────────────────────────────────────────────────
+
+  function goToAlert(courseKey) {
+    pendingCourseKey = courseKey;
+    showSection('alertSection');
+
+    // Pre-fill from last search
+    if (lastSearch) {
+      document.getElementById('alertDate').value = lastSearch.date;
+      document.getElementById('earliestTime').value = lastSearch.earliest;
+      document.getElementById('latestTime').value = lastSearch.latest;
+      document.getElementById('minPlayers').value = lastSearch.players;
+
+      // Pre-select region, then course
+      const regionSelect = document.getElementById('regionSelect');
+      regionSelect.value = lastSearch.region;
+      updateCourseOptions();
+
+      if (courseKey) {
+        document.getElementById('courseSelect').value = courseKey;
+        updateHolesOptions();
+      }
+
+      // Pre-select holes
+      const holesSelect = document.getElementById('holesSelect');
+      if ([...holesSelect.options].some(o => o.value === lastSearch.holes)) {
+        holesSelect.value = lastSearch.holes;
+      }
+    }
+
+    if (chatId) {
+      document.getElementById('linkCard').style.display = 'none';
+      document.getElementById('alertCard').style.display = 'block';
+    } else {
+      document.getElementById('linkCard').style.display = 'block';
+      document.getElementById('alertCard').style.display = 'none';
+    }
   }
 
   async function verifyCode() {
@@ -329,19 +666,16 @@
       chatId = data.chatId;
       localStorage.setItem('golf_link_code', code);
       localStorage.setItem('golf_chat_id', data.chatId);
-      showAlertStep();
-    } catch (e) {
+
+      document.getElementById('linkCard').style.display = 'none';
+      document.getElementById('alertCard').style.display = 'block';
+      loadAlerts();
+    } catch {
       toast('❌ Network error — try again');
     } finally {
       btn.disabled = false;
       btn.textContent = 'Continue →';
     }
-  }
-
-  function showAlertStep() {
-    document.getElementById('linkCard').style.display = 'none';
-    document.getElementById('alertCard').style.display = 'block';
-    loadAlerts();
   }
 
   async function subscribe() {
@@ -369,7 +703,6 @@
 
       if (!res.ok) {
         toast('❌ ' + data.error);
-        // If code expired, send them back to link step
         if (data.error.includes('expired') || data.error.includes('Invalid')) {
           localStorage.removeItem('golf_link_code');
           verifiedCode = null;
@@ -385,10 +718,11 @@
         chatId = data.chatId;
         localStorage.setItem('golf_chat_id', data.chatId);
       }
+
       document.getElementById('successBanner').style.display = 'block';
       setTimeout(() => document.getElementById('successBanner').style.display = 'none', 5000);
       loadAlerts();
-    } catch (e) {
+    } catch {
       toast('❌ Network error — try again');
     } finally {
       btn.disabled = false;
@@ -396,11 +730,11 @@
     }
   }
 
+  // ── Active alerts ─────────────────────────────────────────────
+
   async function loadAlerts() {
-    // We need the chatId — fetch it by doing a dummy subscribe lookup via a subscriptions call
-    // The Worker resolves chatId from the code; we store chatId after first successful subscribe
     const storedChatId = localStorage.getItem('golf_chat_id');
-    if (!storedChatId) return; // haven't subscribed yet
+    if (!storedChatId) return;
 
     const res = await fetch(`${API}/subscriptions?chatId=${storedChatId}`);
     if (!res.ok) return;
@@ -431,18 +765,27 @@
     }
   }
 
+  // ── Init ──────────────────────────────────────────────────────
+
   async function init() {
     await loadCourses();
     initDatePicker();
-    if (chatId || new URLSearchParams(location.search).has('preview')) {
-      showAlertStep();
+
+    const isPreview = new URLSearchParams(location.search).has('preview');
+
+    if (chatId || isPreview) {
+      loadAlerts();
     }
+
+    showSection('searchCard');
   }
 
   init();
 </script>
+
 <footer style="text-align:center;padding:20px;font-size:0.82rem;color:#999;">
   <a href="feedback.html" style="color:#4caf50;text-decoration:none;">Submit feedback or request a course →</a>
 </footer>
+
 </body>
 </html>
