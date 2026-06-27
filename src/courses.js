@@ -38,6 +38,7 @@ export const COURSES = [
   { name: 'Woodley Lakes', region: 'City of LA', city: 'Van Nuys', holes: [18], api: 'golfnow', facilityId: 12205 },
 
   // Ventura County
+  { name: 'Camarillo Springs Golf Course', region: 'Ventura County', city: 'Camarillo', holes: [18], api: 'teeitup', alias: 'camarillo-springs-golf-course' },
   { name: 'Rustic Canyon', region: 'Ventura County', city: 'Moorpark', holes: [18], api: 'foreup', facilityId: '21903', scheduleId: '9285' },
 
   // Orange County
@@ -59,6 +60,7 @@ export const COURSES = [
 
   // Inland Empire
   { name: 'Goose Creek Golf Club', region: 'Inland Empire', city: 'Mira Loma', holes: [18], api: 'ottogolf', facilityId: 'goosecreek', scheduleId: '3', alias: 'goose-creek' },
+  { name: 'Sierra Lakes Golf Club', region: 'Inland Empire', city: 'Fontana', holes: [18], api: 'teeitup', alias: 'sierra-lakes-golf-club' },
 
   // Atlanta
   { name: 'Browns Mill Golf Course', region: 'Atlanta', city: 'Atlanta', holes: [18], api: 'teeitup', alias: 'browns-mill-golf-course' },
