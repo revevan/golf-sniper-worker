@@ -12,7 +12,7 @@ id = "e47ef586fb7b41eeb38994c84f9ef7cc"
 
 [[kv_namespaces]]
 binding = "HISTORY"
-id = "6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c"
+id = "6884300bbd814d758c9c1a697f0faf9c"
 
 [observability.logs]
 enabled = true
