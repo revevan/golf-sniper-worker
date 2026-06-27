@@ -4,6 +4,7 @@ import { fetchForeUp, filterForeUp } from './foreup.js';
 import { fetchGolfNow, filterGolfNow } from './golfnow.js';
 import { fetchOttoGolf, filterOttoGolf } from './ottogolf.js';
 import { sendTelegram } from './telegram.js';
+import { sendAlertEmail } from './email.js';
 import { incrementStat } from './stats.js';
 import { logSlotSnapshot } from './analytics.js';
 
@@ -94,15 +95,25 @@ export async function runCron(env) {
         }).join('\n');
 
         // Send first — only mark as notified after a successful send
-        await sendTelegram(
-          env.TELEGRAM_BOT_TOKEN,
-          sub.telegramChatId,
-          `⛳ *Tee Times Available — ${sub.courseName}*\n` +
-          `${sub.date}\n\n` +
-          `${lines}\n\n` +
-          `[Book now](${bookUrl})`
-        );
-        console.log(`Alert sent — sub ${sub.id} (${sub.courseName} ${course.date}): ${newSlots.map(s => s.time).join(', ')}`);
+        if (sub.notificationType === 'email') {
+          await sendAlertEmail(env.RESEND_API_KEY, {
+            to: sub.email,
+            courseName: sub.courseName,
+            date: course.date,
+            slots: newSlots,
+            bookingUrl: bookUrl,
+          });
+        } else {
+          await sendTelegram(
+            env.TELEGRAM_BOT_TOKEN,
+            sub.telegramChatId,
+            `⛳ *Tee Times Available — ${sub.courseName}*\n` +
+            `${sub.date}\n\n` +
+            `${lines}\n\n` +
+            `[Book now](${bookUrl})`
+          );
+        }
+        console.log(`Alert sent (${sub.notificationType ?? 'telegram'}) — sub ${sub.id} (${sub.courseName} ${course.date}): ${newSlots.map(s => s.time).join(', ')}`);
 
         // Mark slots as notified only after Telegram succeeds
         await Promise.all(newSlots.map(slot =>

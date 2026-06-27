@@ -7,6 +7,7 @@ import { fetchGolfNow } from './golfnow.js';
 import { fetchTeeItUp } from './teeitup.js';
 import { fetchForeUp } from './foreup.js';
 import { fetchOttoGolf } from './ottogolf.js';
+import { sendConfirmationEmail } from './email.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -22,6 +23,24 @@ function json(data, status = 200) {
 
 function uuid() {
   return crypto.randomUUID();
+}
+
+function confirmPage(title, message, success) {
+  const icon = success ? '✅' : '❌';
+  const color = success ? '#2e7d32' : '#c62828';
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title} — Golf Sniper</title></head>
+<body style="margin:0;padding:0;background:#f0f4f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="max-width:480px;margin:60px auto;background:white;border-radius:14px;padding:40px 32px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    <div style="font-size:3rem;margin-bottom:16px">${icon}</div>
+    <h1 style="margin:0 0 12px;font-size:1.4rem;color:${color}">${title}</h1>
+    <p style="margin:0 0 28px;color:#555;font-size:0.95rem;line-height:1.6">${message}</p>
+    <a href="https://revevan.github.io/golf-sniper-worker" style="display:inline-block;background:#4caf50;color:white;text-decoration:none;padding:12px 28px;border-radius:9px;font-weight:700">
+      Back to Golf Sniper
+    </a>
+  </div>
+</body></html>`;
 }
 
 async function listAllKeys(env, prefix) {
@@ -293,6 +312,86 @@ async function handleRequest(req, env) {
 
     const dumps = await getMidnightDumps(env.HISTORY, courseKey, days);
     return json(dumps);
+  }
+
+  // POST /subscribe-email — create alert with email confirmation
+  if (req.method === 'POST' && path === '/subscribe-email') {
+    const body = await req.json();
+    const { email, courseKey, date, earliestTime, latestTime, minPlayers, holes } = body;
+
+    if (!email || !courseKey || !date || !earliestTime || !latestTime || !minPlayers) {
+      return json({ error: 'Missing required fields' }, 400);
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return json({ error: 'Invalid email address' }, 400);
+    }
+
+    const course = COURSES.find(c => String(c.alias || c.facilityId) === String(courseKey));
+    if (!course) return json({ error: 'Unknown course' }, 400);
+
+    const token = uuid();
+    const pending = {
+      email,
+      courseKey: course.alias ?? course.facilityId,
+      courseName: course.name,
+      api: course.api,
+      facilityId: course.facilityId ?? null,
+      scheduleId: course.scheduleId ?? null,
+      date,
+      earliestTime,
+      latestTime,
+      minPlayers: Number(minPlayers),
+      holes: Number(holes ?? course.holes[0]),
+      createdAt: new Date().toISOString(),
+    };
+
+    await env.KV.put(`pending:${token}`, JSON.stringify(pending), { expirationTtl: 86400 });
+
+    await sendConfirmationEmail(env.RESEND_API_KEY, {
+      to: email,
+      token,
+      courseName: course.name,
+      date,
+      earliestTime,
+      latestTime,
+      minPlayers: pending.minPlayers,
+      holes: pending.holes,
+    });
+
+    return json({ message: 'Check your email to confirm your alert' });
+  }
+
+  // GET /confirm-email?token=xxx — activate a pending email subscription
+  if (req.method === 'GET' && path === '/confirm-email') {
+    const token = url.searchParams.get('token');
+    if (!token) return new Response('Missing token', { status: 400 });
+
+    const pending = await env.KV.get(`pending:${token}`, 'json');
+    if (!pending) {
+      return new Response(confirmPage('Link expired', 'This confirmation link has expired or already been used. Please set up your alert again.', false), {
+        status: 410, headers: { 'Content-Type': 'text/html' },
+      });
+    }
+
+    const id = uuid();
+    const sub = { id, ...pending, active: true, notificationType: 'email' };
+
+    const expiry = new Date(pending.date);
+    expiry.setDate(expiry.getDate() + 1);
+    const ttl = Math.max(60, Math.floor((expiry - Date.now()) / 1000));
+
+    await Promise.all([
+      env.KV.put(`sub:${id}`, JSON.stringify(sub), { expirationTtl: ttl }),
+      env.KV.delete(`pending:${token}`),
+      incrementStat(env, 'stats:total_subscriptions'),
+    ]);
+
+    const displayDate = new Date(pending.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    return new Response(confirmPage(
+      'Alert confirmed!',
+      `You're all set. We'll email <strong>${pending.email}</strong> the moment a tee time opens at <strong>${pending.courseName}</strong> on <strong>${displayDate}</strong> (${pending.earliestTime}–${pending.latestTime} · ${pending.minPlayers}+ players).`,
+      true
+    ), { headers: { 'Content-Type': 'text/html' } });
   }
 
   // GET /search?region=...&date=...&earliest=...&latest=...&players=...&holes=...

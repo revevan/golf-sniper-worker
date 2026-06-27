@@ -336,8 +336,32 @@
   <div id="alertSection" style="display:none">
     <button class="back-link" onclick="backFromAlert()">← Back to Search</button>
 
+    <!-- Notification method toggle -->
+    <div class="card" id="notifToggleCard">
+      <div class="card-title">How should we notify you?</div>
+      <div style="display:flex;gap:10px">
+        <label style="flex:1;margin:0">
+          <input type="radio" name="notifMethod" value="email" checked onchange="setNotifMethod('email')"
+            style="width:auto;margin-right:6px">
+          📧 Email
+        </label>
+        <label style="flex:1;margin:0">
+          <input type="radio" name="notifMethod" value="telegram" onchange="setNotifMethod('telegram')"
+            style="width:auto;margin-right:6px">
+          ✈️ Telegram
+        </label>
+      </div>
+    </div>
+
+    <!-- Email input (shown for email method) -->
+    <div class="card" id="emailInputCard">
+      <div class="card-title">Step 1 — Your Email</div>
+      <label style="margin-top:0">Email Address</label>
+      <input type="email" id="alertEmail" placeholder="you@example.com" autocomplete="email">
+    </div>
+
     <!-- Step 1: Link Telegram (hidden if already linked) -->
-    <div class="card" id="linkCard">
+    <div class="card" id="linkCard" style="display:none">
       <div class="card-title">Step 1 — Link Your Telegram</div>
       <div class="step">
         <div class="step-num">1</div>
@@ -358,7 +382,7 @@
     </div>
 
     <!-- Step 2: Alert form -->
-    <div class="card" id="alertCard" style="display:none">
+    <div class="card" id="alertCard">
       <div class="card-title">Set Up Alert</div>
 
       <label>Region</label>
@@ -608,6 +632,18 @@
 
   // ── Alert flow ────────────────────────────────────────────────
 
+  let notifMethod = 'email';
+
+  function setNotifMethod(method) {
+    notifMethod = method;
+    document.getElementById('emailInputCard').style.display = method === 'email' ? 'block' : 'none';
+    if (method === 'telegram') {
+      document.getElementById('linkCard').style.display = chatId ? 'none' : 'block';
+    } else {
+      document.getElementById('linkCard').style.display = 'none';
+    }
+  }
+
   function goToAlert(courseKey) {
     pendingCourseKey = courseKey;
     showSection('alertSection');
@@ -619,7 +655,6 @@
       document.getElementById('latestTime').value = lastSearch.latest;
       document.getElementById('minPlayers').value = lastSearch.players;
 
-      // Pre-select region, then course
       const regionSelect = document.getElementById('regionSelect');
       regionSelect.value = lastSearch.region;
       updateCourseOptions();
@@ -629,20 +664,16 @@
         updateHolesOptions();
       }
 
-      // Pre-select holes
       const holesSelect = document.getElementById('holesSelect');
       if ([...holesSelect.options].some(o => o.value === lastSearch.holes)) {
         holesSelect.value = lastSearch.holes;
       }
     }
 
-    if (chatId) {
-      document.getElementById('linkCard').style.display = 'none';
-      document.getElementById('alertCard').style.display = 'block';
-    } else {
-      document.getElementById('linkCard').style.display = 'block';
-      document.getElementById('alertCard').style.display = 'none';
-    }
+    // Default to email, reset toggle
+    notifMethod = 'email';
+    document.querySelector('input[name="notifMethod"][value="email"]').checked = true;
+    setNotifMethod('email');
   }
 
   async function verifyCode() {
@@ -694,34 +725,52 @@
     if (earliestTime >= latestTime) { toast('End time must be after start time'); btn.disabled = false; btn.textContent = '🔔 Set Alert'; return; }
 
     try {
-      const res = await fetch(`${API}/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linkCode: verifiedCode, chatId, courseKey, date, earliestTime, latestTime, minPlayers, holes }),
-      });
-      const data = await res.json();
+      if (notifMethod === 'email') {
+        const email = document.getElementById('alertEmail').value.trim();
+        if (!email) { toast('Enter your email address'); btn.disabled = false; btn.textContent = '🔔 Set Alert'; return; }
 
-      if (!res.ok) {
-        toast('❌ ' + data.error);
-        if (data.error.includes('expired') || data.error.includes('Invalid')) {
-          localStorage.removeItem('golf_link_code');
-          verifiedCode = null;
-          if (!chatId) {
-            document.getElementById('linkCard').style.display = 'block';
-            document.getElementById('alertCard').style.display = 'none';
+        const res = await fetch(`${API}/subscribe-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, courseKey, date, earliestTime, latestTime, minPlayers, holes }),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast('❌ ' + data.error); return; }
+
+        document.getElementById('successBanner').textContent = '📧 Check your email — we sent a confirmation link.';
+        document.getElementById('successBanner').style.display = 'block';
+        setTimeout(() => document.getElementById('successBanner').style.display = 'none', 8000);
+
+      } else {
+        const res = await fetch(`${API}/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkCode: verifiedCode, chatId, courseKey, date, earliestTime, latestTime, minPlayers, holes }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast('❌ ' + data.error);
+          if (data.error.includes('expired') || data.error.includes('Invalid')) {
+            localStorage.removeItem('golf_link_code');
+            verifiedCode = null;
+            if (!chatId) {
+              document.getElementById('linkCard').style.display = 'block';
+            }
           }
+          return;
         }
-        return;
-      }
 
-      if (data.chatId) {
-        chatId = data.chatId;
-        localStorage.setItem('golf_chat_id', data.chatId);
-      }
+        if (data.chatId) {
+          chatId = data.chatId;
+          localStorage.setItem('golf_chat_id', data.chatId);
+        }
 
-      document.getElementById('successBanner').style.display = 'block';
-      setTimeout(() => document.getElementById('successBanner').style.display = 'none', 5000);
-      loadAlerts();
+        document.getElementById('successBanner').textContent = '✅ Alert set! You\'ll get a Telegram message the moment a matching tee time opens.';
+        document.getElementById('successBanner').style.display = 'block';
+        setTimeout(() => document.getElementById('successBanner').style.display = 'none', 5000);
+        loadAlerts();
+      }
     } catch {
       toast('❌ Network error — try again');
     } finally {
