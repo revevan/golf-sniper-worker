@@ -46,7 +46,8 @@ export const COURSES = [
 
   // Orange County
   { name: 'Anaheim Hills Golf Course', region: 'Orange County', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 1236 },
-  { name: 'Brea Creek Golf Course', region: 'Orange County', city: 'Brea', holes: [9], api: 'golfnow', facilityId: 3153 },
+  // Brea Creek's GolfNow facility (3153) mirrors its native TeeItUp tee sheet exactly; prefer the native engine.
+  { name: 'Brea Creek Golf Course', region: 'Orange County', city: 'Brea', holes: [9], api: 'teeitup', alias: 'brea-creek-golf-course' },
   { name: 'Costa Mesa CC (Los Lagos)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'teeitup', alias: 'costa-mesa-country-club', teeItUpCourseId: '54f150220c8ad60378b0777c' },
   { name: 'Costa Mesa CC (Mesa Linda)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'teeitup', alias: 'costa-mesa-country-club', teeItUpCourseId: '54f150220c8ad60378b0777a' },
   { name: 'Coyote Hills Golf Course', region: 'Orange County', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'coyote-hills-golf-course' },
