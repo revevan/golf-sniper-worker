@@ -417,7 +417,7 @@ async function handleRequest(req, env) {
         course.api === 'foreup'
         ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
         : course.api === 'golfnow'
-        ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search`
+        ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search?date=${date}`
         : course.api === 'ottogolf'
         ? `https://${course.facilityId}.ottogolf.com/booking/${course.scheduleId}/index.asp`
         : (course.teeItUpOrigin ?? `https://${courseKey}.book.teeitup.com`)
