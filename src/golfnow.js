@@ -8,17 +8,19 @@ function toGolfNowDate(date) {
   return `${month} ${day} ${y}`;
 }
 
-// Convert UTC ISO string to Pacific HH:MM
-function toPacificHHMM(utcStr) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(new Date(utcStr));
-  const h = parts.find(p => p.type === 'hour').value.padStart(2, '0');
-  const m = parts.find(p => p.type === 'minute').value.padStart(2, '0');
-  return `${h === '24' ? '00' : h}:${m}`;
+// Extract the local wall-clock date and time from a GolfNow tee-time string.
+//
+// GolfNow returns each tee time as e.g. "2026-07-06T06:20:00+00:00", but the
+// "+00:00" offset is bogus — the clock portion (06:20) is the course's LOCAL
+// tee time, which is also what GolfNow's own UI displays (slot.time.formatted).
+// We must NOT parse this as a real UTC instant: doing so shifts every time by
+// the timezone offset (e.g. a real 1:00 PM slot gets reported as 6:00 AM and a
+// 6:20 AM slot rolls back to 11:20 PM the previous day), which surfaces tee
+// times that don't actually exist at the requested hour. So read the literal
+// wall-clock fields straight from the string instead.
+function parseLocalDateTime(str) {
+  const m = String(str).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  return m ? { date: m[1], time: m[2] } : null;
 }
 
 export async function fetchGolfNow(facilityId, date, minPlayers, holes) {
@@ -67,12 +69,21 @@ export async function fetchGolfNow(facilityId, date, minPlayers, holes) {
 
   if (!res.ok) return [];
   const data = await res.json();
-  return (data.ttResults?.teeTimes ?? []).map(slot => ({
-    time: toPacificHHMM(slot.time.date),
-    availableSpots: minPlayers, // server already filtered by minPlayers
-    greenFee: slot.minTeeTimeRate?.value ?? 0,
-    detailUrl: slot.detailUrl,
-  }));
+  return (data.ttResults?.teeTimes ?? [])
+    .map(slot => {
+      const local = parseLocalDateTime(slot.time?.date);
+      if (!local) return null;
+      return {
+        date: local.date,
+        time: local.time,
+        availableSpots: minPlayers, // server already filtered by minPlayers
+        greenFee: slot.minTeeTimeRate?.value ?? 0,
+        detailUrl: slot.detailUrl,
+      };
+    })
+    // GolfNow sometimes pads results with adjacent-day "next available" slots —
+    // keep only tee times that actually fall on the requested date.
+    .filter(slot => slot && slot.date === date);
 }
 
 export function filterGolfNow(slots, { earliestTime, latestTime }) {

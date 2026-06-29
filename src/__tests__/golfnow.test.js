@@ -46,10 +46,11 @@ describe('fetchGolfNow', () => {
     }));
   }
 
-  // 2025-11-15T15:00:00Z → 07:00 PST (UTC-8)
-  const WINTER_UTC = '2025-11-15T15:00:00Z';
-  // 2025-06-15T14:00:00Z → 07:00 PDT (UTC-7)
-  const SUMMER_UTC = '2025-06-15T14:00:00Z';
+  // GolfNow returns the course's LOCAL wall-clock tee time but tags it with a
+  // bogus "+00:00" offset. The clock portion is the real local time and must be
+  // read literally — NOT converted as a UTC instant.
+  const WINTER_LOCAL = '2025-11-15T07:00:00+00:00';
+  const SUMMER_LOCAL = '2025-06-15T07:00:00+00:00';
 
   const golfNowResponse = (dateStr, overrides = {}) => ({
     ttResults: {
@@ -62,26 +63,50 @@ describe('fetchGolfNow', () => {
     },
   });
 
-  it('converts a winter UTC tee time to Pacific Standard Time', async () => {
-    mockFetch(200, golfNowResponse(WINTER_UTC));
+  it('reads the local wall-clock time without timezone conversion (winter)', async () => {
+    mockFetch(200, golfNowResponse(WINTER_LOCAL));
     const slots = await fetchGolfNow('12345', '2025-11-15', 2, 18);
     expect(slots[0].time).toBe('07:00');
   });
 
-  it('converts a summer UTC tee time to Pacific Daylight Time', async () => {
-    mockFetch(200, golfNowResponse(SUMMER_UTC));
+  it('reads the local wall-clock time without timezone conversion (summer)', async () => {
+    mockFetch(200, golfNowResponse(SUMMER_LOCAL));
     const slots = await fetchGolfNow('12345', '2025-06-15', 2, 18);
     expect(slots[0].time).toBe('07:00');
   });
 
+  it('does NOT shift an early-morning tee time onto the previous day (regression)', async () => {
+    // Real GolfNow payload: 6:20 AM local tagged as +00:00. The old code parsed
+    // this as 06:20 UTC and reported "23:20" on the previous date.
+    mockFetch(200, golfNowResponse('2026-07-06T06:20:00+00:00'));
+    const slots = await fetchGolfNow('12345', '2026-07-06', 2, 18);
+    expect(slots).toHaveLength(1);
+    expect(slots[0].time).toBe('06:20');
+    expect(slots[0].date).toBe('2026-07-06');
+  });
+
+  it('drops slots that fall on a different date than requested', async () => {
+    mockFetch(200, {
+      ttResults: {
+        teeTimes: [
+          { time: { date: '2026-07-06T06:20:00+00:00' }, minTeeTimeRate: { value: 45 }, detailUrl: '/a' },
+          { time: { date: '2026-07-07T06:20:00+00:00' }, minTeeTimeRate: { value: 45 }, detailUrl: '/b' },
+        ],
+      },
+    });
+    const slots = await fetchGolfNow('12345', '2026-07-06', 2, 18);
+    expect(slots).toHaveLength(1);
+    expect(slots[0].date).toBe('2026-07-06');
+  });
+
   it('reads greenFee from minTeeTimeRate.value', async () => {
-    mockFetch(200, golfNowResponse(WINTER_UTC));
+    mockFetch(200, golfNowResponse(WINTER_LOCAL));
     const slots = await fetchGolfNow('12345', '2025-11-15', 2, 18);
     expect(slots[0].greenFee).toBe(45);
   });
 
   it('sets availableSpots equal to the requested minPlayers (server pre-filtered)', async () => {
-    mockFetch(200, golfNowResponse(WINTER_UTC));
+    mockFetch(200, golfNowResponse(WINTER_LOCAL));
     const slots = await fetchGolfNow('12345', '2025-11-15', 3, 18);
     expect(slots[0].availableSpots).toBe(3);
   });
@@ -115,7 +140,7 @@ describe('fetchGolfNow', () => {
   it('handles missing minTeeTimeRate gracefully (defaults greenFee to 0)', async () => {
     mockFetch(200, {
       ttResults: {
-        teeTimes: [{ time: { date: WINTER_UTC }, detailUrl: '/x' }],
+        teeTimes: [{ time: { date: WINTER_LOCAL }, detailUrl: '/x' }],
       },
     });
     const slots = await fetchGolfNow('12345', '2025-11-15', 2, 18);
