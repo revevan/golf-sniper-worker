@@ -81,13 +81,15 @@ export async function runCron(env) {
 
         if (!newSlots.length) continue;
 
-        const bookUrl = course.api === 'foreup'
+        const bookUrl = courseMeta.bookingUrl ?? (
+          course.api === 'foreup'
           ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
           : course.api === 'golfnow'
           ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search`
           : course.api === 'ottogolf'
           ? `https://${course.facilityId}.ottogolf.com/booking/${course.scheduleId}/index.asp`
-          : (courseMeta.teeItUpOrigin ?? `https://${course.courseKey}.book.teeitup.com`);
+          : (courseMeta.teeItUpOrigin ?? `https://${course.courseKey}.book.teeitup.com`)
+        );
 
         const lines = newSlots.map(slot => {
           const priceStr = slot.greenFee ? ` — $${slot.greenFee}/pp` : '';

@@ -413,13 +413,15 @@ async function handleRequest(req, env) {
 
     const items = await Promise.all(coursesInRegion.map(async course => {
       const courseKey = course.alias ?? String(course.facilityId);
-      const bookingUrl = course.api === 'foreup'
+      const bookingUrl = course.bookingUrl ?? (
+        course.api === 'foreup'
         ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
         : course.api === 'golfnow'
         ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search`
         : course.api === 'ottogolf'
         ? `https://${course.facilityId}.ottogolf.com/booking/${course.scheduleId}/index.asp`
-        : (course.teeItUpOrigin ?? `https://${courseKey}.book.teeitup.com`);
+        : (course.teeItUpOrigin ?? `https://${courseKey}.book.teeitup.com`)
+      );
 
       try {
         let raw = [];

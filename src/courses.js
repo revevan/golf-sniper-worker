@@ -47,8 +47,8 @@ export const COURSES = [
   // Orange County
   { name: 'Anaheim Hills Golf Course', region: 'Orange County', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 1236 },
   { name: 'Brea Creek Golf Course', region: 'Orange County', city: 'Brea', holes: [9], api: 'golfnow', facilityId: 3153 },
-  { name: 'Costa Mesa CC (Los Lagos)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12885 },
-  { name: 'Costa Mesa CC (Mesa Linda)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12886 },
+  { name: 'Costa Mesa CC (Los Lagos)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12885, bookingUrl: 'https://www.costamesacountryclub.com/teetimes/' },
+  { name: 'Costa Mesa CC (Mesa Linda)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'golfnow', facilityId: 12886, bookingUrl: 'https://www.costamesacountryclub.com/teetimes/' },
   { name: 'Coyote Hills Golf Course', region: 'Orange County', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'coyote-hills-golf-course' },
   { name: 'Dad Miller Golf Course', region: 'Orange County', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 5240 },
   { name: 'Fullerton Golf Course', region: 'Orange County', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'fullerton-golf-course' },
