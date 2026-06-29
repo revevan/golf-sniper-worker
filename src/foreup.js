@@ -37,11 +37,10 @@ export async function fetchForeUp(facilityId, scheduleId, date, players, holes =
     : [];
 }
 
-export function filterForeUp(slots, { earliestTime, latestTime, minPlayers, holes }) {
+export function filterForeUp(slots, { earliestTime, latestTime, minPlayers }) {
   return slots.filter(s =>
     s.time >= earliestTime &&
     s.time <= latestTime &&
-    s.availableSpots >= minPlayers &&
-    s.holes === holes
+    s.availableSpots >= minPlayers
   );
 }

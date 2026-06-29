@@ -24,7 +24,7 @@ function baseTemplate(body) {
 
 export async function sendConfirmationEmail(apiKey, { to, token, courseName, date, earliestTime, latestTime, minPlayers, holes }) {
   const confirmUrl = `${WORKER_URL}/confirm-email?token=${token}`;
-  const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const displayDate = new Date(date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
 
   const html = baseTemplate(`
     <h2 style="margin:0 0 8px;font-size:1.15rem;color:#222">Confirm your tee time alert</h2>
@@ -48,7 +48,7 @@ export async function sendConfirmationEmail(apiKey, { to, token, courseName, dat
 }
 
 export async function sendAlertEmail(apiKey, { to, courseName, date, slots, bookingUrl }) {
-  const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const displayDate = new Date(date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
 
   const slotRows = slots.map(slot => {
     const priceStr = slot.greenFee ? ` &mdash; $${slot.greenFee}/pp` : '';

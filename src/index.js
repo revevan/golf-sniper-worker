@@ -386,7 +386,7 @@ async function handleRequest(req, env) {
       incrementStat(env, 'stats:total_subscriptions'),
     ]);
 
-    const displayDate = new Date(pending.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const displayDate = new Date(pending.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
     return new Response(confirmPage(
       'Alert confirmed!',
       `You're all set. We'll email <strong>${pending.email}</strong> the moment a tee time opens at <strong>${pending.courseName}</strong> on <strong>${displayDate}</strong> (${pending.earliestTime}–${pending.latestTime} · ${pending.minPlayers}+ players).`,

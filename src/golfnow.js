@@ -1,8 +1,11 @@
 // Convert YYYY-MM-DD → "May 14 2026" (GolfNow date format)
+// Uses UTC to ensure consistent date interpretation across timezones
 function toGolfNowDate(date) {
   const [y, m, d] = date.split('-');
-  const month = new Date(date + 'T12:00:00Z').toLocaleString('en-US', { month: 'long' });
-  return `${month} ${parseInt(d)} ${y}`;
+  const dateObj = new Date(date + 'T12:00:00Z');
+  const month = dateObj.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+  const day = dateObj.toLocaleString('en-US', { day: 'numeric', timeZone: 'UTC' });
+  return `${month} ${day} ${y}`;
 }
 
 // Convert UTC ISO string to Pacific HH:MM
