@@ -372,9 +372,11 @@ describe('runCron — ForeUp', () => {
 // GolfNow backend
 // ---------------------------------------------------------------------------
 describe('runCron — GolfNow', () => {
-  const golfNowSlot = (utcTime) => ({
+  // GolfNow reports the course's LOCAL wall-clock time tagged with a bogus
+  // "+00:00" offset, on the sub's date (2025-11-15).
+  const golfNowSlot = (localTime) => ({
     ttResults: {
-      teeTimes: [{ time: { date: utcTime }, minTeeTimeRate: { value: 45 }, detailUrl: '/x' }],
+      teeTimes: [{ time: { date: `2025-11-15T${localTime}:00+00:00` }, minTeeTimeRate: { value: 45 }, detailUrl: '/x' }],
     },
   });
 
@@ -383,7 +385,7 @@ describe('runCron — GolfNow', () => {
       api: 'golfnow', courseKey: '99999', courseName: 'Anaheim Hills', facilityId: '99999',
     });
     const env = makeEnv({ 'sub:sub-1': sub });
-    mockFetch(golfNowSlot(UTC['07:00']));
+    mockFetch(golfNowSlot('07:00'));
 
     await runCron(env);
 
@@ -397,7 +399,7 @@ describe('runCron — GolfNow', () => {
       earliestTime: '09:00', latestTime: '10:00',
     });
     const env = makeEnv({ 'sub:sub-1': sub });
-    mockFetch(golfNowSlot(UTC['07:00']));
+    mockFetch(golfNowSlot('07:00'));
 
     await runCron(env);
 

@@ -46,19 +46,18 @@ export const COURSES = [
 
   // Orange County
   { name: 'Anaheim Hills Golf Course', region: 'Orange County', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 1236 },
-  { name: 'Brea Creek Golf Course', region: 'Orange County', city: 'Brea', holes: [9], api: 'golfnow', facilityId: 3153 },
+  // Brea Creek's GolfNow facility (3153) mirrors its native TeeItUp tee sheet exactly; prefer the native engine.
+  { name: 'Brea Creek Golf Course', region: 'Orange County', city: 'Brea', holes: [9], api: 'teeitup', alias: 'brea-creek-golf-course' },
   { name: 'Costa Mesa CC (Los Lagos)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'teeitup', alias: 'costa-mesa-country-club', teeItUpCourseId: '54f150220c8ad60378b0777c' },
   { name: 'Costa Mesa CC (Mesa Linda)', region: 'Orange County', city: 'Costa Mesa', holes: [18], api: 'teeitup', alias: 'costa-mesa-country-club', teeItUpCourseId: '54f150220c8ad60378b0777a' },
   { name: 'Coyote Hills Golf Course', region: 'Orange County', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'coyote-hills-golf-course' },
   { name: 'Dad Miller Golf Course', region: 'Orange County', city: 'Anaheim', holes: [18], api: 'golfnow', facilityId: 5240 },
   { name: 'Fullerton Golf Course', region: 'Orange County', city: 'Fullerton', holes: [18], api: 'teeitup', alias: 'fullerton-golf-course' },
   { name: 'Lake Forest Golf & Practice Center', region: 'Orange County', city: 'Lake Forest', holes: [9], api: 'teeitup', alias: 'lake-forest-golf-and-practice-center' },
-  { name: 'Laguna Woods Golf Course', region: 'Orange County', city: 'Laguna Woods', holes: [9], api: 'golfnow', facilityId: 14190 },
   { name: 'Mile Square Golf Course', region: 'Orange County', city: 'Fountain Valley', holes: [18], api: 'foreup', facilityId: '20096', scheduleId: '3760' },
   { name: 'Navy Golf Course (Destroyer)', region: 'Orange County', city: 'Cypress', holes: [18], api: 'golfnow', facilityId: 9834 },
   { name: 'Navy Golf Course (Cruiser)', region: 'Orange County', city: 'Cypress', holes: [9], api: 'golfnow', facilityId: 9835 },
   { name: 'Oso Creek Golf Course', region: 'Orange County', city: 'Mission Viejo', holes: [18], api: 'golfnow', facilityId: 940 },
-  { name: 'Pelican Hill Golf Club (South)', region: 'Orange County', city: 'Newport Coast', holes: [18], api: 'golfnow', facilityId: 16071 },
   { name: 'Rancho San Joaquin', region: 'Orange County', city: 'Irvine', holes: [18], api: 'teeitup', alias: 'rancho-san-joaquin-golf-club' },
   { name: 'River View Golf Course', region: 'Orange County', city: 'Santa Ana', holes: [18], api: 'teeitup', alias: 'river-view-golf-club' },
   { name: 'San Clemente Municipal Golf Course', region: 'Orange County', city: 'San Clemente', holes: [18], api: 'foreup', facilityId: '18754', scheduleId: '413' },
