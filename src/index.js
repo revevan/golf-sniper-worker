@@ -25,6 +25,107 @@ function uuid() {
   return crypto.randomUUID();
 }
 
+/**
+ * Course descriptors: /search accepts courses the caller describes, not just
+ * the built-in list — any region works if you know the booking-platform IDs
+ * (this is what lets a remixed brik do New York against this same worker).
+ * Strict validation because these values feed our upstream fetches: only the
+ * four known platforms, and teeItUpOrigin locked to real TeeItUp hosts.
+ */
+const API_KINDS = new Set(['teeitup', 'golfnow', 'foreup', 'ottogolf']);
+
+function sanitizeCourseDescriptor(d) {
+  if (!d || typeof d !== 'object') return null;
+  const api = String(d.api ?? '');
+  if (!API_KINDS.has(api)) return null;
+  const slug = v =>
+    typeof v === 'string' && /^[a-z0-9-]{1,80}$/i.test(v) ? v : null;
+  const num = v => (/^\d{1,10}$/.test(String(v)) ? String(v) : null);
+  const out = {
+    api,
+    name: typeof d.name === 'string' ? d.name.slice(0, 80) : 'Course',
+  };
+  if (typeof d.bookingUrl === 'string' && /^https:\/\/[^\s"'<>]{1,300}$/.test(d.bookingUrl)) {
+    out.bookingUrl = d.bookingUrl;
+  }
+  if (api === 'teeitup') {
+    out.alias = slug(d.alias);
+    if (!out.alias) return null;
+    if (d.teeItUpAlias != null) {
+      out.teeItUpAlias = slug(d.teeItUpAlias);
+      if (!out.teeItUpAlias) return null;
+    }
+    if (d.teeItUpOrigin != null) {
+      const o = String(d.teeItUpOrigin);
+      if (!/^https:\/\/[a-z0-9-]{1,80}\.book\.teeitup\.com$/i.test(o)) return null;
+      out.teeItUpOrigin = o;
+    }
+    if (d.teeItUpCourseId != null) {
+      out.teeItUpCourseId = slug(String(d.teeItUpCourseId));
+      if (!out.teeItUpCourseId) return null;
+    }
+  } else if (api === 'golfnow') {
+    out.facilityId = num(d.facilityId);
+    if (!out.facilityId) return null;
+  } else if (api === 'foreup') {
+    out.facilityId = num(d.facilityId);
+    out.scheduleId = num(d.scheduleId);
+    if (!out.facilityId || !out.scheduleId) return null;
+  } else if (api === 'ottogolf') {
+    out.facilityId = slug(d.facilityId);
+    out.scheduleId = num(d.scheduleId);
+    if (!out.facilityId || !out.scheduleId) return null;
+  }
+  return out;
+}
+
+/** One course's open slots for the day — shared by region and descriptor search. */
+async function searchCourse(course, { date, earliest, latest, players, holes }) {
+  const withTimeout = (p, ms = 10000) =>
+    Promise.race([
+      p,
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+    ]);
+  const courseKey = course.alias ?? String(course.facilityId);
+  const bookingUrl = course.bookingUrl ?? (
+    course.api === 'foreup'
+      ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
+      : course.api === 'golfnow'
+        ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search?date=${date}`
+        : course.api === 'ottogolf'
+          ? `https://${course.facilityId}.ottogolf.com/booking/${course.scheduleId}/index.asp`
+          : (course.teeItUpOrigin ?? `https://${courseKey}.book.teeitup.com`)
+  );
+
+  try {
+    let raw = [];
+    if (course.api === 'teeitup') {
+      const alias = course.teeItUpAlias ?? courseKey;
+      raw = await withTimeout(
+        fetchTeeItUp(alias, date, course.teeItUpCourseId ?? null, course.teeItUpOrigin ?? null),
+      );
+      raw = raw.filter(s => s.holes === holes && s.availableSpots >= players);
+    } else if (course.api === 'golfnow') {
+      raw = await withTimeout(fetchGolfNow(course.facilityId, date, players, holes));
+    } else if (course.api === 'foreup') {
+      raw = await withTimeout(fetchForeUp(course.facilityId, course.scheduleId, date, players, holes));
+    } else if (course.api === 'ottogolf') {
+      raw = await withTimeout(fetchOttoGolf(course.facilityId, course.scheduleId, date));
+      raw = raw.filter(s => s.availableSpots >= players);
+    }
+
+    const matching = raw.filter(s => s.time >= earliest && s.time <= latest);
+    return {
+      name: course.name,
+      courseKey,
+      bookingUrl,
+      slots: matching.map(s => ({ time: s.time, players: s.availableSpots, fee: s.greenFee ?? null })),
+    };
+  } catch {
+    return { name: course.name, courseKey, bookingUrl, slots: [], error: true };
+  }
+}
+
 function confirmPage(title, message, success) {
   const icon = success ? '✅' : '❌';
   const color = success ? '#2e7d32' : '#c62828';
@@ -394,7 +495,11 @@ async function handleRequest(req, env) {
     ), { headers: { 'Content-Type': 'text/html' } });
   }
 
-  // GET /search?region=...&date=...&earliest=...&latest=...&players=...&holes=...
+  // GET /search — two shapes:
+  //   ?region=LA City&date=...                    → the built-in course list
+  //   ?courses=<JSON descriptor array>&date=...   → caller-described courses,
+  //     any region in the country (see sanitizeCourseDescriptor)
+  // Shared filters: earliest, latest, players, holes.
   if (req.method === 'GET' && path === '/search') {
     const region = url.searchParams.get('region');
     const date = url.searchParams.get('date');
@@ -402,56 +507,35 @@ async function handleRequest(req, env) {
     const latest = url.searchParams.get('latest') ?? '18:00';
     const players = Number(url.searchParams.get('players') ?? 2);
     const holes = Number(url.searchParams.get('holes') ?? 18);
+    if (!date) return json({ error: 'date required' }, 400);
 
-    if (!region || !date) return json({ error: 'region and date required' }, 400);
-
-    const coursesInRegion = COURSES.filter(c => c.region === region);
-    const withTimeout = (p, ms = 10000) => Promise.race([
-      p,
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
-    ]);
-
-    const items = await Promise.all(coursesInRegion.map(async course => {
-      const courseKey = course.alias ?? String(course.facilityId);
-      const bookingUrl = course.bookingUrl ?? (
-        course.api === 'foreup'
-        ? `https://foreupsoftware.com/index.php/booking/${course.facilityId}/${course.scheduleId}`
-        : course.api === 'golfnow'
-        ? `https://www.golfnow.com/tee-times/facility/${course.facilityId}/search?date=${date}`
-        : course.api === 'ottogolf'
-        ? `https://${course.facilityId}.ottogolf.com/booking/${course.scheduleId}/index.asp`
-        : (course.teeItUpOrigin ?? `https://${courseKey}.book.teeitup.com`)
-      );
-
+    let courses;
+    const coursesParam = url.searchParams.get('courses');
+    if (coursesParam) {
+      let parsed;
       try {
-        let raw = [];
-        if (course.api === 'teeitup') {
-          const alias = course.teeItUpAlias ?? courseKey;
-          raw = await withTimeout(fetchTeeItUp(alias, date, course.teeItUpCourseId ?? null, course.teeItUpOrigin ?? null));
-          raw = raw.filter(s => s.holes === holes && s.availableSpots >= players);
-        } else if (course.api === 'golfnow') {
-          raw = await withTimeout(fetchGolfNow(course.facilityId, date, players, holes));
-        } else if (course.api === 'foreup') {
-          raw = await withTimeout(fetchForeUp(course.facilityId, course.scheduleId, date, players, holes));
-        } else if (course.api === 'ottogolf') {
-          raw = await withTimeout(fetchOttoGolf(course.facilityId, course.scheduleId, date));
-          raw = raw.filter(s => s.availableSpots >= players);
-        }
-
-        const matching = raw.filter(s => s.time >= earliest && s.time <= latest);
-        return {
-          name: course.name,
-          courseKey,
-          bookingUrl,
-          slots: matching.map(s => ({ time: s.time, players: s.availableSpots, fee: s.greenFee ?? null })),
-        };
+        parsed = JSON.parse(coursesParam);
       } catch {
-        return { name: course.name, courseKey, bookingUrl, slots: [], error: true };
+        return json({ error: 'courses must be a JSON array of descriptors' }, 400);
       }
-    }));
+      if (!Array.isArray(parsed)) {
+        return json({ error: 'courses must be a JSON array of descriptors' }, 400);
+      }
+      courses = parsed.slice(0, 15).map(sanitizeCourseDescriptor).filter(Boolean);
+      if (courses.length === 0) {
+        return json({ error: 'no valid course descriptors', hint: 'each needs api + platform ids; see README' }, 400);
+      }
+    } else {
+      if (!region) return json({ error: 'region or courses required' }, 400);
+      courses = COURSES.filter(c => c.region === region);
+    }
+
+    const items = await Promise.all(
+      courses.map(course => searchCourse(course, { date, earliest, latest, players, holes })),
+    );
 
     return json({
-      region,
+      region: region ?? null,
       date,
       results: items.filter(i => i.slots.length > 0),
       empty: items.filter(i => i.slots.length === 0 && !i.error),

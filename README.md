@@ -2,6 +2,25 @@
 
 Tee time alert bot for 60+ public golf courses in LA, OC, Long Beach, Ventura, Inland Empire, and Atlanta. Set a search window and get a Telegram message the moment a slot opens.
 
+## Course descriptors (open regions)
+
+`GET /search` also accepts caller-described courses — any region works if you
+know the booking-platform IDs:
+
+```
+/search?date=2026-07-12&courses=[{"api":"golfnow","facilityId":5043,"name":"Van Cortlandt (Bronx)"}]
+```
+
+Descriptor shapes (validated server-side; max 15 per request):
+- `{ api: "golfnow", facilityId }`
+- `{ api: "teeitup", alias, teeItUpAlias?, teeItUpOrigin?, teeItUpCourseId? }`
+- `{ api: "foreup", facilityId, scheduleId }`
+- `{ api: "ottogolf", facilityId, scheduleId }`
+
+This is what lets a remixed [brikz](https://buildbrikz.com) brik serve New
+York against this same worker. Alert subscriptions remain limited to the
+built-in course list.
+
 ## How it works
 
 1. Message the Telegram bot `/start` to get a link code
